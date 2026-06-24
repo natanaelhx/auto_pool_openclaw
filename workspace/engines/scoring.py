@@ -37,6 +37,10 @@ def score_pool(pool, profile: str, market_metrics=None) -> PoolScore:
         f"APR ajustado por risco {risk_adjusted_apr * 100:.2f}% ao ano.",
     ] + warnings
     if market_metrics:
+        rsi = market_metrics.get("rsi_14")
+        atr = market_metrics.get("atr_pct_14")
+        bollinger = market_metrics.get("bollinger_width_pct")
+        adx = market_metrics.get("adx_14")
         reasons.insert(
             3,
             "Market data: range "
@@ -44,6 +48,14 @@ def score_pool(pool, profile: str, market_metrics=None) -> PoolScore:
             f"em {int(market_metrics.get('observations') or 0)} observacoes "
             f"via {market_metrics.get('source')}.",
         )
+        if all(value is not None for value in [rsi, atr, bollinger, adx]):
+            reasons.insert(
+                4,
+                "Indicadores: "
+                f"RSI14 {float(rsi):.1f}, ATR14 {float(atr) * 100:.2f}%, "
+                f"Bollinger width {float(bollinger) * 100:.2f}%, ADX14 {float(adx):.1f}, "
+                f"regime {market_metrics.get('trend_regime') or 'misto'}.",
+            )
 
     if blocks:
         decision = "bloqueado"
@@ -70,6 +82,11 @@ def score_pool(pool, profile: str, market_metrics=None) -> PoolScore:
         market_data_source=str((market_metrics or {}).get("source") or "heuristic"),
         observed_range_pct=round(float((market_metrics or {}).get("range_pct") or 0.0), 6),
         observed_volatility=round(float((market_metrics or {}).get("realized_volatility") or 0.0), 6),
+        rsi_14=round(float((market_metrics or {}).get("rsi_14") or 0.0), 6),
+        atr_pct_14=round(float((market_metrics or {}).get("atr_pct_14") or 0.0), 6),
+        bollinger_width_pct=round(float((market_metrics or {}).get("bollinger_width_pct") or 0.0), 6),
+        adx_14=round(float((market_metrics or {}).get("adx_14") or 0.0), 6),
+        trend_regime=str((market_metrics or {}).get("trend_regime") or "unknown"),
     )
 
 

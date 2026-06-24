@@ -33,6 +33,11 @@ class PoolScore:
     market_data_source: str = "heuristic"
     observed_range_pct: float = 0.0
     observed_volatility: float = 0.0
+    rsi_14: float = 0.0
+    atr_pct_14: float = 0.0
+    bollinger_width_pct: float = 0.0
+    adx_14: float = 0.0
+    trend_regime: str = "unknown"
 
 
 @dataclass

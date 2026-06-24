@@ -1,6 +1,6 @@
 ---
 name: auto-pool-openclaw
-description: Analisa, ranqueia, simula, planeja e executa simulacao guardada de pools DeFi em redes EVM e Solana, com APR ajustado por risco, TVL, liquidez, lateralizacao, drawdown, impermanent loss, plano de entrada/saida, recibos auditaveis, guardrails e dry-run. Use para encontrar pools, simular alocacao, preparar add/remove liquidity, collect fees, rebalance e revisar riscos antes de qualquer execucao on-chain. Keywords: auto pool, DeFi, LP, EVM, Solana, liquidity pool, APR, TVL, yield, impermanent loss, drawdown, dry-run, planner, guarded execution, guardrails.
+description: Analisa, ranqueia, simula, planeja e executa simulacao guardada de pools DeFi em redes EVM e Solana, com APR ajustado por risco, TVL, liquidez, RSI, ATR, Bollinger width, ADX, lateralizacao, drawdown, impermanent loss, plano de entrada/saida, recibos auditaveis, guardrails e dry-run. Use para encontrar pools, simular alocacao, preparar add/remove liquidity, collect fees, rebalance e revisar riscos antes de qualquer execucao on-chain. Keywords: auto pool, DeFi, LP, EVM, Solana, liquidity pool, APR, TVL, RSI, ATR, ADX, Bollinger, yield, impermanent loss, drawdown, dry-run, planner, guarded execution, guardrails.
 ---
 
 # Auto Pool OpenClaw
@@ -28,6 +28,7 @@ A `auto-pools` implementa motor proprio de:
 - risco;
 - lateralizacao;
 - dias estimados em lateralizacao/range;
+- RSI14, ATR14, Bollinger width, ADX14 e regime do par quando `--market-data` estiver ativo;
 - drawdown;
 - impermanent loss;
 - exposicao de carteira;
@@ -101,6 +102,8 @@ python3 workspace/wizard.py --headless --profile conservador --capital 1000 --al
 ```
 
 O script usa biblioteca padrao do Python e degrada com dados de exemplo quando APIs publicas nao responderem.
+
+Com `--market-data`, o score usa candles publicos quando disponiveis para calcular range observado, volatilidade realizada, drawdown observado, RSI14, ATR14, Bollinger width, ADX14 e regime (`lateral`, `tendencia`, `impulso` ou `misto`). Quando candles nao existem, a skill volta para heuristicas conservadoras.
 
 ## Wizard
 

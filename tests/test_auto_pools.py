@@ -78,13 +78,51 @@ class AutoPoolsTest(unittest.TestCase):
         correlated = pair_market_metrics(["SOL", "JITOSOL"])
         self.assertEqual(stable["source"], "stable-heuristic")
         self.assertEqual(correlated["source"], "correlated-asset-heuristic")
+        self.assertEqual(stable["trend_regime"], "lateral")
+        self.assertIn("rsi_14", stable)
+        self.assertIn("atr_pct_14", stable)
+        self.assertIn("bollinger_width_pct", stable)
+        self.assertIn("adx_14", stable)
 
     def test_ranking_can_use_market_metrics(self):
         pool = PoolCandidate("ethereum", "uniswap-v3", "ETH/USDC", ["ETH", "USDC"], 0.08, 50_000_000, 5_000_000)
-        metrics = {"source": "test", "observations": 30, "range_pct": 0.03, "realized_volatility": 0.02, "max_drawdown": 0.02}
+        metrics = {
+            "source": "test",
+            "observations": 30,
+            "range_pct": 0.03,
+            "realized_volatility": 0.02,
+            "max_drawdown": 0.02,
+            "rsi_14": 51.0,
+            "atr_pct_14": 0.01,
+            "bollinger_width_pct": 0.04,
+            "adx_14": 12.0,
+            "trend_regime": "lateral",
+        }
         ranked = rank_pools([pool], "conservador", 1, {"ETH/USDC": metrics})
         self.assertEqual(ranked[0].market_data_source, "test")
+        self.assertEqual(ranked[0].trend_regime, "lateral")
+        self.assertEqual(ranked[0].rsi_14, 51.0)
         self.assertGreaterEqual(ranked[0].lateralization_score, 80.0)
+
+    def test_trending_market_metrics_reduce_lateralization_score(self):
+        pool = PoolCandidate("ethereum", "uniswap-v3", "ETH/USDC", ["ETH", "USDC"], 0.08, 50_000_000, 5_000_000)
+        lateral_metrics = {
+            "source": "test",
+            "observations": 60,
+            "range_pct": 0.03,
+            "realized_volatility": 0.02,
+            "max_drawdown": 0.02,
+            "rsi_14": 51.0,
+            "atr_pct_14": 0.01,
+            "bollinger_width_pct": 0.04,
+            "adx_14": 12.0,
+            "trend_regime": "lateral",
+        }
+        trend_metrics = dict(lateral_metrics, rsi_14=78.0, atr_pct_14=0.08, bollinger_width_pct=0.22, adx_14=38.0, trend_regime="tendencia")
+        lateral = rank_pools([pool], "conservador", 1, {"ETH/USDC": lateral_metrics})[0]
+        trend = rank_pools([pool], "conservador", 1, {"ETH/USDC": trend_metrics})[0]
+        self.assertLess(trend.lateralization_score, lateral.lateralization_score)
+        self.assertGreater(trend.estimated_drawdown, lateral.estimated_drawdown)
 
     def test_dry_run_caps_allocation(self):
         ranked = rank_pools(sample_pools(), "moderado", 1)

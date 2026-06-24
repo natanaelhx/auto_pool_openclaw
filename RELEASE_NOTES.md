@@ -1,3 +1,42 @@
+## v0.3.0 — 2026-06-24
+
+> Bump: MINOR
+> Compatibilidade: retrocompativel com v0.2.0
+
+### Added
+- OHLC historico publico via Binance para `--market-data`.
+- Indicadores RSI14, ATR14 percentual, Bollinger width e ADX14 sobre o ratio do par.
+- Campo `trend_regime` com valores `lateral`, `tendencia`, `impulso` ou `misto`.
+- Novos campos no `PoolScore`: `rsi_14`, `atr_pct_14`, `bollinger_width_pct`, `adx_14` e `trend_regime`.
+- Testes para indicadores heurísticos e penalizacao de mercado em tendencia.
+
+### Changed
+- Lateralizacao agora considera range, volatilidade realizada, drawdown, ATR, Bollinger width, ADX e RSI quando market data existe.
+- Volatilidade usada em drawdown/IL passa a considerar ATR, Bollinger width e tendencia por ADX.
+- Resumo CLI exibe indicadores quando disponiveis.
+- Roadmap atualizado: v0.4.0 fica para CoinGecko/range dinamico, v0.5.0 carteira, v0.6.0 watcher.
+
+### Security
+- Execucao real continua bloqueada.
+- Nenhuma dependencia nova foi adicionada; os indicadores usam apenas biblioteca padrao Python.
+- Nenhum segredo novo e necessario.
+
+### Migration Notes
+- Usuarios da v0.2.0 podem continuar usando todos os modos sem mudanca.
+- Para ativar os indicadores, usar `--market-data`.
+- Sem `--market-data` ou sem candles suficientes, a skill usa fallback heuristico.
+
+### Validation
+- [x] `skill.json.version` atualizado para `0.3.0`.
+- [x] `python3 -m py_compile workspace/*.py workspace/adapters/*.py workspace/engines/*.py workspace/models/*.py workspace/state/*.py`.
+- [x] `AUTO_POOLS_USE_SAMPLE=1 python3 -m unittest discover -s tests -v`.
+- [x] Smoke `rank --market-data --json` retorna RSI/ATR/Bollinger/ADX.
+- [x] Sem secrets, sem `.env`, sem artefatos de runtime versionados.
+
+### Rollback
+- Tag anterior estavel: `v0.2.0`.
+- Procedimento: instalar `v0.2.0` ou publicar patch corretivo sem deletar release publicada.
+
 ## v0.2.0 — 2026-06-24
 
 > Bump: MINOR

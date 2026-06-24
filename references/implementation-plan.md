@@ -146,16 +146,21 @@ Nesta etapa nao ha signer, assinatura nem broadcast.
 
 ### 0.3.0
 
-- Historico CoinGecko.
-- RSI, ATR, Bollinger width e ADX.
-- Lateralizacao por dados reais.
+- Historico OHLC publico via Binance quando `--market-data` estiver ativo.
+- RSI14, ATR14, Bollinger width e ADX14.
+- Lateralizacao por dados reais do ratio do par, com fallback heuristico.
 
 ### 0.4.0
+
+- Historico CoinGecko opcional para ativos sem Binance.
+- Correlacao entre ativos e range dinamico sugerido para pools concentradas.
+
+### 0.5.0
 
 - Carteira multichain por endereco.
 - Exposicao por ativo, chain e protocolo.
 
-### 0.5.0
+### 0.6.0
 
 - Watcher e alertas.
 - Estado persistente.

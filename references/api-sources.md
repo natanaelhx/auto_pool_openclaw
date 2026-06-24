@@ -37,9 +37,10 @@ https://api.binance.com/api/v3/klines
 
 Uso atual:
 
-- buscar closes diarios de BTC/USDT, ETH/USDT e SOL/USDT;
-- montar ratio do par quando os dois ativos tem preco;
+- buscar OHLC diario de BTC/USDT, ETH/USDT e SOL/USDT;
+- montar OHLC sintetico do ratio do par quando os dois ativos tem preco;
 - medir range observado, volatilidade realizada e drawdown observado;
+- calcular RSI14, ATR14, Bollinger width, ADX14 e regime;
 - cair para heuristica quando o ativo nao tem candle publico confiavel.
 
 ## Dune

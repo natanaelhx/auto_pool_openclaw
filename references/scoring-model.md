@@ -30,4 +30,15 @@ score_final =
 
 A lateralizacao nao deve ser tratada como sinonimo de stablecoin. Stable/stable recebe nota alta por baixa variacao relativa, mas pares BTC/stable, ETH/stable, SOL/stable, BTC/ETH, ETH/LST, BTC wrappers e SOL/LST tambem podem entrar quando a liquidez, o drawdown estimado e o IL ficam dentro dos limites do perfil.
 
-No MVP, quando nao ha serie historica de candles configurada, a lateralizacao usa uma heuristica conservadora por classe de ativo. A evolucao correta e usar market data real para medir range, ATR, volatilidade realizada e correlacao entre os dois ativos.
+Quando `--market-data` esta ativo, a lateralizacao usa candles publicos para medir o ratio do par e calcular:
+
+- range observado;
+- volatilidade realizada;
+- drawdown observado;
+- RSI14;
+- ATR14 em percentual;
+- Bollinger width;
+- ADX14;
+- regime do par.
+
+Quando nao ha serie historica confiavel, a lateralizacao volta para heuristica conservadora por classe de ativo.

@@ -11,18 +11,37 @@ def score_from_market_metrics(metrics):
     range_pct = float(metrics.get("range_pct") or 0.0)
     realized_volatility = float(metrics.get("realized_volatility") or 0.0)
     max_drawdown = float(metrics.get("max_drawdown") or 0.0)
-    pressure = max(range_pct, realized_volatility * 1.5, max_drawdown * 1.2)
+    atr_pct = float(metrics.get("atr_pct_14") or 0.0)
+    bollinger_width = float(metrics.get("bollinger_width_pct") or 0.0)
+    adx = float(metrics.get("adx_14") or 0.0)
+    rsi = float(metrics.get("rsi_14") or 50.0)
+    pressure = max(range_pct, realized_volatility * 1.5, max_drawdown * 1.2, atr_pct * 2.2, bollinger_width * 0.80)
     if pressure <= 0.02:
-        return 94.0
-    if pressure <= 0.06:
-        return 86.0
-    if pressure <= 0.10:
-        return 76.0
-    if pressure <= 0.16:
-        return 66.0
-    if pressure <= 0.24:
-        return 54.0
-    return 40.0
+        base = 94.0
+    elif pressure <= 0.06:
+        base = 86.0
+    elif pressure <= 0.10:
+        base = 76.0
+    elif pressure <= 0.16:
+        base = 66.0
+    elif pressure <= 0.24:
+        base = 54.0
+    else:
+        base = 40.0
+
+    if adx >= 35:
+        base -= 16.0
+    elif adx >= 28:
+        base -= 10.0
+    elif adx <= 18:
+        base += 4.0
+
+    if rsi >= 75 or rsi <= 25:
+        base -= 8.0
+    elif 42 <= rsi <= 58:
+        base += 3.0
+
+    return max(0.0, min(100.0, base))
 
 
 def volatility_from_market_metrics(metrics):
@@ -31,7 +50,12 @@ def volatility_from_market_metrics(metrics):
     range_pct = float(metrics.get("range_pct") or 0.0)
     realized_volatility = float(metrics.get("realized_volatility") or 0.0)
     max_drawdown = float(metrics.get("max_drawdown") or 0.0)
-    return max(0.01, min(0.60, max(range_pct * 0.60, realized_volatility, max_drawdown)))
+    atr_pct = float(metrics.get("atr_pct_14") or 0.0)
+    bollinger_width = float(metrics.get("bollinger_width_pct") or 0.0)
+    adx = float(metrics.get("adx_14") or 0.0)
+    trend_multiplier = 1.15 if adx >= 28 else 1.0
+    observed = max(range_pct * 0.60, realized_volatility, max_drawdown, atr_pct * 1.8, bollinger_width * 0.40)
+    return max(0.01, min(0.60, observed * trend_multiplier))
 
 
 def estimate_lateralization_score(assets, market_metrics=None):

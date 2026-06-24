@@ -47,6 +47,13 @@ def print_summary(scored):
         print(f"   TVL: US$ {pool.tvl_usd:,.0f} | Volume 24h: US$ {pool.volume_24h_usd:,.0f}")
         print(f"   Lateralizacao: {item.lateralization_score:.1f}/100 (~{item.lateralization_days_estimate} dias)")
         print(f"   Market data: {item.market_data_source} | Range observado: {item.observed_range_pct * 100:.2f}%")
+        if item.trend_regime != "unknown":
+            print(
+                "   Indicadores: "
+                f"RSI14 {item.rsi_14:.1f} | ATR14 {item.atr_pct_14 * 100:.2f}% | "
+                f"Bollinger {item.bollinger_width_pct * 100:.2f}% | ADX14 {item.adx_14:.1f} | "
+                f"Regime {item.trend_regime}"
+            )
         print(f"   Drawdown estimado: {item.estimated_drawdown * 100:.2f}% | IL estimado: {item.estimated_il * 100:.2f}%")
         print(f"   Cenario: {item.scenario}")
         if item.blocks:
@@ -151,6 +158,13 @@ def main():
         print(f"Yield anual esperado ajustado: US$ {dry_run.expected_yearly_yield_usd:,.2f}")
         print(f"Lateralizacao: {best.lateralization_score:.1f}/100 (~{best.lateralization_days_estimate} dias)")
         print(f"Market data: {best.market_data_source} | Range observado: {best.observed_range_pct * 100:.2f}%")
+        if best.trend_regime != "unknown":
+            print(
+                "Indicadores: "
+                f"RSI14 {best.rsi_14:.1f} | ATR14 {best.atr_pct_14 * 100:.2f}% | "
+                f"Bollinger {best.bollinger_width_pct * 100:.2f}% | ADX14 {best.adx_14:.1f} | "
+                f"Regime {best.trend_regime}"
+            )
         print(f"Perda maxima estimada por drawdown: US$ {dry_run.max_loss_estimate_usd:,.2f}")
         print(f"IL estimado: US$ {dry_run.il_estimate_usd:,.2f}")
         if best.blocks:
