@@ -10,15 +10,18 @@ sys.path.insert(0, BASE_DIR)
 
 from adapters.defillama import fetch_pools
 from adapters.market_data import pair_market_metrics
+from audit import run_audit
 from dry_run import simulate
 from engines.scoring import rank_pools
 from executor import execute_guarded
 from planner import build_execution_plan
+from wallet import analyze_wallet
+from watcher import review_positions
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Auto Pool OpenClaw - scan, ranking, dry-run, plano e execucao guardada DeFi.")
-    parser.add_argument("--mode", choices=["scan", "rank", "dry-run", "plan", "execute", "wizard"], default="rank")
+    parser.add_argument("--mode", choices=["scan", "rank", "dry-run", "plan", "execute", "wallet", "watch", "audit", "wizard"], default="rank")
     parser.add_argument("--action", choices=["open", "close", "collect", "rebalance"], default="open", help="Acao usada no modo execute.")
     parser.add_argument("--position-id", default="", help="ID de posicao simulada para close, collect ou rebalance.")
     parser.add_argument("--confirm", action="store_true", help="Confirmacao explicita para execucao guardada. Nao faz broadcast nesta release.")
@@ -28,6 +31,7 @@ def parse_args():
     parser.add_argument("--capital", type=float, default=1000.0)
     parser.add_argument("--allocation-pct", type=float, default=0.08)
     parser.add_argument("--market-data", action="store_true", help="Usa candles publicos quando disponiveis para lateralizacao.")
+    parser.add_argument("--wallet-address", default=os.getenv("AUTO_POOLS_WALLET_ADDRESS", ""), help="Endereco publico para modo wallet.")
     parser.add_argument("--json", action="store_true", help="Retorna JSON bruto.")
     return parser.parse_args()
 
@@ -85,6 +89,41 @@ def main():
             "signer_env": "AUTO_POOLS_SIGNER_REF",
         }
         output_json(run_analysis(config))
+        return
+
+    if args.mode == "wallet":
+        payload = analyze_wallet(args.wallet_address)
+        if args.json:
+            output_json(payload)
+        else:
+            print("Carteira")
+            print(f"Endereco: {payload['wallet'] or 'nao informado'}")
+            print(f"Valida: {payload['validation']['valid']} | Familia: {payload['validation']['chain_family']}")
+            print(f"Exposicao simulada: US$ {payload['exposure']['total_simulated_usd']:,.2f}")
+            print(f"Posicoes abertas simuladas: {len(payload['exposure']['open_positions'])}")
+        return
+
+    if args.mode == "watch":
+        payload = review_positions()
+        if args.json:
+            output_json(payload)
+        else:
+            print("Watcher")
+            print(f"Posicoes revisadas: {payload['positions_reviewed']}")
+            print(f"Alertas: {payload['alerts_count']}")
+            for review in payload["reviews"]:
+                print(f"- {review['position_id']} {review['pool']}: {review['action']} ({'; '.join(review['alerts']) or 'sem alertas'})")
+        return
+
+    if args.mode == "audit":
+        payload = run_audit(os.path.dirname(BASE_DIR))
+        if args.json:
+            output_json(payload)
+        else:
+            print("Auditoria")
+            print(f"Status: {payload['status']}")
+            for check in payload["checks"]:
+                print(f"- {check['name']}: {check['status']}")
         return
 
     pools = fetch_pools(limit=max(args.limit, 25), chain=args.chain)

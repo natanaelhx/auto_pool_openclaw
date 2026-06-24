@@ -17,6 +17,9 @@
 - Simula alocacao em modo dry-run sem executar transacao real.
 - Gera plano operacional de entrada, saida, collect fees e rebalance para EVM/Solana sem assinar transacao.
 - Simula execucao guardada de `open`, `close`, `collect` e `rebalance`, com recibo auditavel e sem broadcast.
+- Revisa carteira publica e exposicao simulada por ativo, chain e protocolo.
+- Roda watcher local de posicoes simuladas abertas com alertas de guardrail/range/risco.
+- Roda auditoria local de secrets e artefatos runtime antes de release.
 - Inclui wizard em PT-BR para configurar perfil, capital, limite por pool e dry-run inicial.
 - Aplica guardrails de seguranca para bloquear cenarios ruins.
 - Responde e documenta tudo em portugues do Brasil.
@@ -59,6 +62,9 @@ python3 workspace/auto_pools.py --mode plan --chain base --profile conservador -
 python3 workspace/auto_pools.py --mode plan --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --json
 python3 workspace/auto_pools.py --mode execute --action open --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --confirm --json
 python3 workspace/auto_pools.py --mode execute --action open --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --confirm --json
+python3 workspace/auto_pools.py --mode wallet --wallet-address 0x0000000000000000000000000000000000000000 --json
+python3 workspace/auto_pools.py --mode watch --json
+python3 workspace/auto_pools.py --mode audit --json
 python3 workspace/wizard.py
 python3 workspace/wizard.py --headless --profile conservador --capital 1000 --allocation-pct 0.08 --limit 10
 ```
@@ -137,6 +143,14 @@ Regras importantes:
 - o estado local fica fora do Git por `.gitignore`;
 - se `AUTO_POOLS_EXECUTION_ENABLE=true` for definido sem `AUTO_POOLS_SIGNER_REF`, o recibo marca `missing-signer-ref`, mas ainda nao transmite transacao.
 
+## Carteira, watcher e auditoria
+
+O modo `wallet` aceita apenas endereco publico EVM ou Solana. Ele nao consulta seed, chave privada, token ou cookie. A exposicao exibida vem do estado simulado local criado por `execute open`.
+
+O modo `watch` revisa posicoes simuladas abertas e gera alertas como `guardrails-blocked`, `low-range-confidence`, `drawdown-watch` e `impermanent-loss-watch`. Ele nao usa signer e nao faz broadcast.
+
+O modo `audit` roda checagens locais para secrets, artefatos runtime ignorados e status de seguranca de execucao. Use antes de tag/release.
+
 ## Estrutura
 
 ```text
@@ -145,6 +159,7 @@ auto_pool_openclaw/
 ├── skill.json
 ├── README.md
 ├── RELEASE_NOTES.md
+├── AUDIT.md
 ├── LICENSE
 ├── workspace/
 │   ├── auto_pools.py
@@ -162,7 +177,7 @@ auto_pool_openclaw/
 
 - Nunca coloque seed phrase, chave privada, token ou cookie no Git.
 - O MVP e dry-run por padrao.
-- Execucao real de transacao esta fora da versao `0.4.0`.
+- Execucao real de transacao esta fora da versao `0.5.0`.
 - Qualquer execucao futura deve usar ENV/secret manager, simulacao previa e confirmacao explicita.
 
 ## Licenca

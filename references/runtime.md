@@ -17,5 +17,8 @@ Credenciais devem vir de variaveis de ambiente ou secret manager:
 - `DUNE_API_KEY`
 - `AUTO_POOLS_WALLET_ADDRESS`
 - `AUTO_POOLS_DEFAULT_PROFILE`
+- `AUTO_POOLS_USE_SAMPLE`
+- `AUTO_POOLS_EXECUTION_ENABLE`
+- `AUTO_POOLS_SIGNER_REF`
 
 Nunca colocar secrets no Git.

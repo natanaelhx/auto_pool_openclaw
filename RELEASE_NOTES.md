@@ -1,3 +1,46 @@
+## v0.5.0 — 2026-06-24
+
+> Bump: MINOR
+> Compatibilidade: retrocompativel com v0.4.0
+
+### Added
+- Modo `wallet` para validar endereco publico EVM/Solana e consolidar exposicao simulada por ativo, chain e protocolo.
+- Modo `watch` para revisar posicoes simuladas abertas e alertar sobre bloqueios, baixa confianca de range, drawdown e IL.
+- Modo `audit` para checar secrets, artefatos runtime ignorados e status de seguranca antes de release.
+- Modulos `workspace/wallet.py`, `workspace/watcher.py` e `workspace/audit.py`.
+- Relatorio `AUDIT.md` com escopo, invariantes e validacao da release.
+- `tests/__init__.py` para `python3 -m unittest` descobrir a suite padrao.
+- Testes unitarios para carteira, watcher e auditoria.
+
+### Changed
+- CLI `workspace/auto_pools.py` agora aceita `--mode wallet`, `--mode watch`, `--mode audit` e `--wallet-address`.
+- Roadmap seguro consolidado: carteira/watch/auditoria ficam entregues sem signer e sem broadcast.
+- Docs atualizados com os novos modos e schemas.
+
+### Security
+- `wallet` aceita somente endereco publico e rejeita formato invalido.
+- `watch` opera apenas sobre estado local simulado.
+- `audit` varre padroes de segredo sem imprimir valores sensiveis.
+- Execucao real continua bloqueada; `broadcasted=false` e `tx_hash=null` permanecem invariantes do executor.
+
+### Migration Notes
+- Usuarios da v0.4.0 podem continuar usando todos os modos sem mudanca.
+- Para revisar exposicao simulada, primeiro gere uma posicao com `execute open --confirm`.
+- Para auditoria local, usar `python3 workspace/auto_pools.py --mode audit --json`.
+
+### Validation
+- [x] `skill.json.version` atualizado para `0.5.0`.
+- [x] `python3 -m py_compile workspace/*.py workspace/adapters/*.py workspace/engines/*.py workspace/models/*.py workspace/state/*.py`.
+- [x] `AUTO_POOLS_USE_SAMPLE=1 python3 -m unittest -v`.
+- [x] Smoke `wallet --json` rejeita formato invalido e aceita endereco publico.
+- [x] Smoke `watch --json` retorna `broadcasted=false`.
+- [x] Smoke `audit --json` retorna status pass.
+- [x] Sem secrets, sem `.env`, sem artefatos de runtime versionados.
+
+### Rollback
+- Tag anterior estavel: `v0.4.0`.
+- Procedimento: instalar `v0.4.0` ou publicar patch corretivo sem deletar release publicada.
+
 ## v0.4.0 — 2026-06-24
 
 > Bump: MINOR

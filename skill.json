@@ -1,7 +1,7 @@
 {
   "name": "auto-pool-openclaw",
-  "version": "0.4.0",
-  "description": "Skill OpenClaw para analisar pools DeFi EVM/Solana com score, indicadores, range dinamico e execucao guardada.",
+  "version": "0.5.0",
+  "description": "Skill OpenClaw para analisar pools DeFi EVM/Solana com score, range dinamico, carteira, watcher, auditoria e execucao guardada.",
   "author": "NatanaelH",
   "license": "Proprietary",
   "homepage": "https://github.com/natanaelhx/auto_pool_openclaw",

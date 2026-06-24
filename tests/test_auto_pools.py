@@ -9,12 +9,15 @@ sys.path.insert(0, WORKSPACE)
 from adapters.defillama import _normalize_apr, _parse_assets, _source_filter_reasons, fetch_pools, sample_pools
 from adapters import market_data
 from adapters.market_data import pair_market_metrics
+from audit import run_audit
 from dry_run import simulate
 from models.schemas import PoolCandidate
 from engines.scoring import rank_pools
 from executor import execute_guarded
 from planner import build_execution_plan
 from state.store import POSITIONS_PATH
+from wallet import analyze_wallet, validate_public_wallet
+from watcher import review_positions
 from wizard import build_config_from_args, run_analysis
 
 
@@ -186,6 +189,45 @@ class AutoPoolsTest(unittest.TestCase):
         self.assertIsNone(receipt.tx_hash)
         self.assertIn("dry-run-only-release", receipt.blocked_reasons)
         self.assertIn("execution-disabled", receipt.blocked_reasons)
+
+    def test_wallet_exposure_uses_public_address_and_simulated_state(self):
+        ranked = rank_pools(sample_pools(), "moderado", 5)
+        score = [item for item in ranked if item.pool.chain == "solana"][0]
+        plan = build_execution_plan(score, 1000.0, 0.05)
+        execute_guarded(plan, "open", confirm=True)
+
+        wallet = analyze_wallet("11111111111111111111111111111111")
+
+        self.assertTrue(wallet["validation"]["valid"])
+        self.assertEqual(wallet["validation"]["chain_family"], "solana")
+        self.assertFalse(wallet["security"]["seed_phrase_allowed"])
+        self.assertGreater(wallet["exposure"]["total_simulated_usd"], 0.0)
+        self.assertIn("SOL", wallet["exposure"]["by_asset"])
+
+    def test_wallet_rejects_private_or_invalid_input_shape(self):
+        validation = validate_public_wallet("seed phrase words should never be accepted")
+        self.assertFalse(validation["valid"])
+        self.assertEqual(validation["reason"], "invalid-public-wallet-format")
+
+    def test_watcher_reviews_open_simulated_positions(self):
+        ranked = rank_pools(sample_pools(), "conservador", 5)
+        score = [item for item in ranked if item.pool.chain == "base"][0]
+        plan = build_execution_plan(score, 1000.0, 0.08)
+        receipt = execute_guarded(plan, "open", confirm=True)
+
+        review = review_positions()
+
+        self.assertEqual(review["mode"], "watch")
+        self.assertEqual(review["positions_reviewed"], 1)
+        self.assertFalse(review["security"]["broadcasted"])
+        self.assertEqual(review["reviews"][0]["position_id"], receipt.position_id)
+        self.assertIn(review["reviews"][0]["action"], {"hold", "review"})
+
+    def test_audit_reports_no_secret_findings(self):
+        audit = run_audit(ROOT)
+        secret_scan = [item for item in audit["checks"] if item["name"] == "secret-scan"][0]
+        self.assertEqual(secret_scan["status"], "pass")
+        self.assertFalse(audit["security"]["broadcast_enabled"])
 
     def test_guarded_executor_requires_confirmation(self):
         ranked = rank_pools(sample_pools(), "conservador", 5)

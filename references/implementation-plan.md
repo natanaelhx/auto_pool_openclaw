@@ -160,11 +160,14 @@ Nesta etapa nao ha signer, assinatura nem broadcast.
 
 - Carteira multichain por endereco.
 - Exposicao por ativo, chain e protocolo.
+- Auditoria local de secrets e artefatos runtime.
 
 ### 0.6.0
 
 - Watcher e alertas.
 - Estado persistente.
+
+Nota da v0.5.0: o watcher local seguro foi antecipado para fechar pendencias sem execucao real. Uma v0.6.0 futura pode adicionar agendamento/alertas externos, mas isso deve pedir confirmacao antes de enviar mensagens.
 
 ### 1.0.0
 

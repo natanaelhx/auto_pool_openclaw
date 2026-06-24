@@ -42,3 +42,8 @@ Campos principais:
 - `estimated_il`
 - `decision`
 - `blocks`
+- `range_suggestion`
+- `wallet.validation`
+- `wallet.exposure`
+- `watch.reviews`
+- `audit.checks`
