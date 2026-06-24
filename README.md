@@ -1,0 +1,117 @@
+# auto-pool-openclaw
+
+> Skill standalone para analisar, ranquear, simular e planejar automacao segura de pools DeFi EVM/Solana com APR ajustado por risco.
+
+## O que faz
+
+- Busca pools candidatas em fontes publicas compativeis com ambientes conteinerizados.
+- Filtra pools EVM e Solana por chain suportada, protocolo confiavel, token seguro, TVL, APR minimo/maximo, outlier e exposicao LP.
+- Calcula score por APR, TVL, volume, liquidez, lateralizacao, drawdown e impermanent loss.
+- Usa candles publicos para lateralizacao quando `--market-data` estiver ativo, com fallback heuristico.
+- Gera ranking por perfil conservador, moderado ou agressivo.
+- Aplica cenarios conservadores por tipo de par: stable/stable, ETH/stable, BTC/stable, SOL/stable, BTC/ETH, ETH/LST, BTC wrappers e SOL/LST.
+- Estima tempo de lateralizacao/range.
+- Simula alocacao em modo dry-run sem executar transacao real.
+- Gera plano operacional de entrada, saida, collect fees e rebalance para EVM/Solana sem assinar transacao.
+- Inclui wizard em PT-BR para configurar perfil, capital, limite por pool e dry-run inicial.
+- Aplica guardrails de seguranca para bloquear cenarios ruins.
+- Responde e documenta tudo em portugues do Brasil.
+
+## Pre-requisitos
+
+| Requisito | Como configurar |
+|-----------|-----------------|
+| Python 3 | Necessario no runtime/container |
+| COINGECKO_API_KEY | Opcional, Dashboard -> Chaves e Segredos |
+| DEFILLAMA_API_KEY | Opcional, Dashboard -> Chaves e Segredos |
+| DUNE_API_KEY | Opcional, Dashboard -> Chaves e Segredos |
+| AUTO_POOLS_WALLET_ADDRESS | Opcional, endereco publico para analise de carteira |
+| AUTO_POOLS_DEFAULT_PROFILE | Opcional: conservador, moderado ou agressivo |
+| AUTO_POOLS_EXECUTION_ENABLE | Futuro, deve ficar ausente/false nesta versao |
+| AUTO_POOLS_SIGNER_REF | Futuro, referencia de signer externo via secret manager |
+
+## Exemplos de Uso
+
+### Buscar pools conservadoras
+
+**Usuario:** "auto-pools, encontre pools conservadoras com bom APR ajustado por risco"
+
+**Bot:** retorna ranking em PT-BR com APR, TVL, drawdown, IL, motivos e bloqueios.
+
+### Simular alocacao
+
+**Usuario:** "simule 8% da carteira na melhor pool conservadora"
+
+**Bot:** roda dry-run, calcula impacto de carteira, drawdown estimado e invalidacao.
+
+## CLI local
+
+```bash
+python3 workspace/auto_pools.py --mode scan --profile conservador --limit 10
+python3 workspace/auto_pools.py --mode scan --chain solana --profile conservador --limit 10
+python3 workspace/auto_pools.py --mode rank --profile moderado --limit 10 --market-data
+python3 workspace/auto_pools.py --mode dry-run --profile conservador --capital 1000 --allocation-pct 0.08
+python3 workspace/auto_pools.py --mode plan --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --json
+python3 workspace/auto_pools.py --mode plan --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --json
+python3 workspace/wizard.py
+python3 workspace/wizard.py --headless --profile conservador --capital 1000 --allocation-pct 0.08 --limit 10
+```
+
+## Wizard
+
+O wizard faz uma pergunta por vez, em portugues, e salva apenas configuracoes operacionais em `workspace/state/auto_pools_config.json` quando usado de modo interativo. Esse arquivo fica ignorado pelo Git.
+
+Campos configurados:
+
+- perfil de risco: conservador, moderado ou agressivo;
+- capital de referencia em USD;
+- percentual maximo por pool;
+- quantidade de pools no ranking;
+- endereco publico da carteira, opcional;
+- modo de automacao: `dry-run` ou `guarded`.
+
+Esta versao nao executa transacao real. Seed phrase e chave privada nao sao solicitadas, nao sao aceitas e nao devem ser salvas no repositorio. Para uma versao futura com execucao, usar apenas signer externo via secret manager/ENV.
+
+## Plano de automacao
+
+O modo `plan` gera um `PoolExecutionPlan` com:
+
+- `adapter_family`: familia de integracao, como `evm-uniswap-v3`, `evm-slipstream`, `solana-orca-whirlpools` ou `solana-raydium`;
+- `entry_steps`: approve/add liquidity ou instrucoes SPL/Whirlpool/Raydium;
+- `exit_steps`: remove liquidity e collect fees;
+- `rebalance_steps`: saida em duas fases e nova entrada;
+- `guardrails`: slippage, gas, deadline, drawdown, IL, confirmacao obrigatoria e bloqueios.
+
+O campo `guardrails.execution_enabled` fica `false` nesta versao mesmo que `AUTO_POOLS_EXECUTION_ENABLE` exista. Isso e intencional: o repo entrega automacao planejada e testavel, nao assinatura on-chain.
+
+## Estrutura
+
+```text
+auto_pool_openclaw/
+├── SKILL.md
+├── skill.json
+├── README.md
+├── RELEASE_NOTES.md
+├── LICENSE
+├── workspace/
+│   ├── auto_pools.py
+│   ├── adapters/
+│   ├── engines/
+│   ├── models/
+│   └── state/
+└── references/
+    ├── implementation-plan.md
+    ├── scoring-model.md
+    └── risk-guardrails.md
+```
+
+## Segurança
+
+- Nunca coloque seed phrase, chave privada, token ou cookie no Git.
+- O MVP e dry-run por padrao.
+- Execucao real de transacao esta fora da versao `0.1.0`.
+- Qualquer execucao futura deve usar ENV/secret manager, simulacao previa e confirmacao explicita.
+
+## Licenca
+
+Proprietary. Ver LICENSE.
