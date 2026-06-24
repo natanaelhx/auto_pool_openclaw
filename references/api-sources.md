@@ -27,6 +27,13 @@ APY/APR recebido em formato percentual deve ser normalizado para decimal antes d
 
 Opcional para preco e historico. Quando `COINGECKO_API_KEY` estiver configurada, a skill pode usar endpoints autenticados via ambiente ou secret manager.
 
+Uso atual:
+
+- fallback OHLC para ativos sem candles Binance suficientes;
+- endpoint publico `/coins/{id}/ohlc`;
+- mapeamento conservador de symbols para IDs CoinGecko conhecidos;
+- retorno convertido para OHLC padrao interno.
+
 ## Binance Public Market Data
 
 Usada opcionalmente para candles publicos quando `--market-data` estiver ativo.
@@ -41,6 +48,7 @@ Uso atual:
 - montar OHLC sintetico do ratio do par quando os dois ativos tem preco;
 - medir range observado, volatilidade realizada e drawdown observado;
 - calcular RSI14, ATR14, Bollinger width, ADX14 e regime;
+- tentar fallback CoinGecko quando Binance nao tiver dados suficientes;
 - cair para heuristica quando o ativo nao tem candle publico confiavel.
 
 ## Dune

@@ -42,3 +42,23 @@ Quando `--market-data` esta ativo, a lateralizacao usa candles publicos para med
 - regime do par.
 
 Quando nao ha serie historica confiavel, a lateralizacao volta para heuristica conservadora por classe de ativo.
+
+## Range Dinamico
+
+Para pools concentradas, o score gera `range_suggestion`:
+
+```text
+width_pct = max(
+  minimo_por_perfil,
+  range_observado * 1.20,
+  ATR14_pct * 6.0,
+  Bollinger_width * 1.10
+)
+```
+
+O resultado e limitado por perfil e retorna:
+
+- limite inferior/superior percentual em torno do ratio spot;
+- gatilho de rebalance em 80% da largura;
+- confianca baseada em observacoes, regime e ADX;
+- notas de cautela quando a confianca e baixa.

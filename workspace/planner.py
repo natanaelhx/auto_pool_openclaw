@@ -107,6 +107,7 @@ def build_execution_plan(score, capital_usd: float, allocation_pct: float) -> Po
         profile=score.profile,
         allocation_usd=allocation_usd,
         token_amounts_usd={asset: per_asset for asset in assets},
+        range_suggestion=score.range_suggestion,
         adapter_family=adapter,
         entry_steps=_entry_steps(chain, adapter),
         exit_steps=_exit_steps(chain),

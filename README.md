@@ -9,6 +9,8 @@
 - Calcula score por APR, TVL, volume, liquidez, lateralizacao, drawdown e impermanent loss.
 - Usa candles publicos para lateralizacao quando `--market-data` estiver ativo, com fallback heuristico.
 - Calcula RSI14, ATR14, Bollinger width, ADX14 e regime do par quando ha OHLC historico suficiente.
+- Usa CoinGecko como fallback opcional para ativos sem candles Binance suficientes.
+- Gera `range_suggestion` com largura dinamica, limites percentuais, gatilho de rebalance e confianca.
 - Gera ranking por perfil conservador, moderado ou agressivo.
 - Aplica cenarios conservadores por tipo de par: stable/stable, ETH/stable, BTC/stable, SOL/stable, BTC/ETH, ETH/LST, BTC wrappers e SOL/LST.
 - Estima tempo de lateralizacao/range.
@@ -103,6 +105,20 @@ Quando `--market-data` esta ativo, a skill usa candles publicos para montar o ra
 
 Esses indicadores afetam a lateralizacao e a volatilidade usada em drawdown/IL. Pares com ADX alto, RSI extremo, ATR alto ou Bollinger width largo perdem score e podem ser bloqueados pelo perfil conservador.
 
+A fonte primaria e Binance. Se a Binance nao tiver candle suficiente para um ativo mapeado, a skill tenta CoinGecko OHLC. `COINGECKO_API_KEY` e opcional e deve ficar no ambiente/secret manager quando usada.
+
+## Range dinamico
+
+O score e o plano incluem `range_suggestion`:
+
+- `lower_pct` e `upper_pct`: limites percentuais em torno do ratio spot;
+- `width_pct`: largura total sugerida;
+- `rebalance_trigger_pct`: deslocamento que deve acionar nova avaliacao;
+- `confidence`: `alta`, `media` ou `baixa`;
+- `notes`: contexto operacional.
+
+O range usa range observado, ATR14, Bollinger width, ADX14, regime e perfil de risco. Em tendencia forte ou impulso, a confianca cai e a skill recomenda menor alocacao, range mais largo ou aguardar.
+
 ## Execucao guardada
 
 O modo `execute` cria um recibo de simulacao para o ciclo completo de pool:
@@ -146,7 +162,7 @@ auto_pool_openclaw/
 
 - Nunca coloque seed phrase, chave privada, token ou cookie no Git.
 - O MVP e dry-run por padrao.
-- Execucao real de transacao esta fora da versao `0.3.0`.
+- Execucao real de transacao esta fora da versao `0.4.0`.
 - Qualquer execucao futura deve usar ENV/secret manager, simulacao previa e confirmacao explicita.
 
 ## Licenca

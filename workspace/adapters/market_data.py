@@ -1,10 +1,13 @@
 import json
 import math
+import os
 import urllib.error
+import urllib.parse
 import urllib.request
 
 
 BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
+COINGECKO_OHLC_URL = "https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
 STABLES = {"USDC", "USDT", "DAI", "FRAX", "USDS", "LUSD", "PYUSD", "USDE", "USDC.E", "USDT.E"}
 CANONICAL = {
     "BTC": "BTC",
@@ -21,6 +24,25 @@ CANONICAL = {
     "MSOL": "SOL",
     "JITOSOL": "SOL",
     "BSOL": "SOL",
+}
+COINGECKO_IDS = {
+    "BTC": "bitcoin",
+    "WBTC": "wrapped-bitcoin",
+    "CBBTC": "coinbase-wrapped-btc",
+    "TBTC": "tbtc",
+    "ETH": "ethereum",
+    "WETH": "weth",
+    "STETH": "staked-ether",
+    "WSTETH": "wrapped-steth",
+    "RETH": "rocket-pool-eth",
+    "CBETH": "coinbase-wrapped-staked-eth",
+    "SOL": "solana",
+    "MSOL": "msol",
+    "JITOSOL": "jito-staked-sol",
+    "BSOL": "blazestake-staked-sol",
+    "ARB": "arbitrum",
+    "OP": "optimism",
+    "MATIC": "matic-network",
 }
 
 
@@ -58,6 +80,51 @@ def fetch_binance_klines(asset: str, interval: str = "1d", limit: int = 60, time
 
 def fetch_binance_closes(asset: str, interval: str = "1d", limit: int = 60, timeout: int = 8):
     return [item["close"] for item in fetch_binance_klines(asset, interval, limit, timeout)]
+
+
+def fetch_coingecko_ohlc(asset: str, days: int = 60, timeout: int = 8):
+    coin_id = COINGECKO_IDS.get(asset.upper())
+    if not coin_id:
+        return []
+    query = urllib.parse.urlencode({"vs_currency": "usd", "days": str(days)})
+    url = f"{COINGECKO_OHLC_URL.format(coin_id=coin_id)}?{query}"
+    headers = {"User-Agent": "auto-pools/0.4.0"}
+    api_key = os.getenv("COINGECKO_API_KEY", "").strip()
+    if api_key:
+        headers["x-cg-demo-api-key"] = api_key
+    request = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return []
+    candles = []
+    for row in payload:
+        try:
+            candles.append(
+                {
+                    "open": float(row[1]),
+                    "high": float(row[2]),
+                    "low": float(row[3]),
+                    "close": float(row[4]),
+                }
+            )
+        except (IndexError, TypeError, ValueError):
+            continue
+    return candles[-days:]
+
+
+def _fetch_asset_candles(asset: str, interval: str, limit: int):
+    if asset == "USD":
+        stable_candle = {"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0}
+        return [stable_candle] * limit, "stable"
+    binance = fetch_binance_klines(asset, interval=interval, limit=limit)
+    if len(binance) >= max(10, limit // 2):
+        return binance, "binance"
+    coingecko = fetch_coingecko_ohlc(asset, days=limit)
+    if len(coingecko) >= max(10, limit // 2):
+        return coingecko, "coingecko"
+    return [], "none"
 
 
 def _returns(values):
@@ -248,9 +315,8 @@ def pair_market_metrics(assets, interval: str = "1d", limit: int = 60):
             "indicator_source": "heuristic",
         }
 
-    stable_candle = {"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0}
-    left_candles = [stable_candle] * limit if left == "USD" else fetch_binance_klines(left, interval=interval, limit=limit)
-    right_candles = [stable_candle] * limit if right == "USD" else fetch_binance_klines(right, interval=interval, limit=limit)
+    left_candles, left_source = _fetch_asset_candles(left, interval, limit)
+    right_candles, right_source = _fetch_asset_candles(right, interval, limit)
     observations = min(len(left_candles), len(right_candles))
     if observations < max(10, limit // 2):
         return None
@@ -263,11 +329,12 @@ def pair_market_metrics(assets, interval: str = "1d", limit: int = 60):
     low = min(ratios)
     high = max(ratios)
     range_pct = (high / low) - 1.0 if low > 0 else 0.0
+    source = "+".join(sorted({left_source, right_source} - {"stable"})) or "stable"
     return {
-        "source": "binance",
+        "source": source,
         "observations": len(ratios),
         "range_pct": range_pct,
         "realized_volatility": _realized_volatility(ratios),
         "max_drawdown": _max_drawdown(ratios),
-        **_indicator_payload(candles, "binance-ratio-ohlc"),
+        **_indicator_payload(candles, f"{source}-ratio-ohlc"),
     }

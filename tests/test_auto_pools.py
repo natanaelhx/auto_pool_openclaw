@@ -7,6 +7,7 @@ WORKSPACE = os.path.join(ROOT, "workspace")
 sys.path.insert(0, WORKSPACE)
 
 from adapters.defillama import _normalize_apr, _parse_assets, _source_filter_reasons, fetch_pools, sample_pools
+from adapters import market_data
 from adapters.market_data import pair_market_metrics
 from dry_run import simulate
 from models.schemas import PoolCandidate
@@ -84,11 +85,37 @@ class AutoPoolsTest(unittest.TestCase):
         self.assertIn("bollinger_width_pct", stable)
         self.assertIn("adx_14", stable)
 
+    def test_coingecko_fallback_builds_market_metrics(self):
+        original_binance = market_data.fetch_binance_klines
+        original_coingecko = market_data.fetch_coingecko_ohlc
+
+        def fake_binance(*args, **kwargs):
+            return []
+
+        def fake_coingecko(*args, **kwargs):
+            candles = []
+            for index in range(60):
+                close = 100.0 + index * 0.2
+                candles.append({"open": close - 0.1, "high": close + 0.3, "low": close - 0.3, "close": close})
+            return candles
+
+        try:
+            market_data.fetch_binance_klines = fake_binance
+            market_data.fetch_coingecko_ohlc = fake_coingecko
+            metrics = pair_market_metrics(["ARB", "USDC"])
+        finally:
+            market_data.fetch_binance_klines = original_binance
+            market_data.fetch_coingecko_ohlc = original_coingecko
+
+        self.assertEqual(metrics["source"], "coingecko")
+        self.assertEqual(metrics["indicator_source"], "coingecko-ratio-ohlc")
+        self.assertIn("adx_14", metrics)
+
     def test_ranking_can_use_market_metrics(self):
         pool = PoolCandidate("ethereum", "uniswap-v3", "ETH/USDC", ["ETH", "USDC"], 0.08, 50_000_000, 5_000_000)
         metrics = {
             "source": "test",
-            "observations": 30,
+            "observations": 60,
             "range_pct": 0.03,
             "realized_volatility": 0.02,
             "max_drawdown": 0.02,
@@ -102,6 +129,7 @@ class AutoPoolsTest(unittest.TestCase):
         self.assertEqual(ranked[0].market_data_source, "test")
         self.assertEqual(ranked[0].trend_regime, "lateral")
         self.assertEqual(ranked[0].rsi_14, 51.0)
+        self.assertEqual(ranked[0].range_suggestion.confidence, "alta")
         self.assertGreaterEqual(ranked[0].lateralization_score, 80.0)
 
     def test_trending_market_metrics_reduce_lateralization_score(self):
@@ -123,6 +151,7 @@ class AutoPoolsTest(unittest.TestCase):
         trend = rank_pools([pool], "conservador", 1, {"ETH/USDC": trend_metrics})[0]
         self.assertLess(trend.lateralization_score, lateral.lateralization_score)
         self.assertGreater(trend.estimated_drawdown, lateral.estimated_drawdown)
+        self.assertEqual(trend.range_suggestion.confidence, "baixa")
 
     def test_dry_run_caps_allocation(self):
         ranked = rank_pools(sample_pools(), "moderado", 1)
@@ -135,6 +164,7 @@ class AutoPoolsTest(unittest.TestCase):
         score = [item for item in ranked if item.pool.chain == "base"][0]
         plan = build_execution_plan(score, 1000.0, 0.08)
         self.assertEqual(plan.adapter_family, "evm-slipstream")
+        self.assertIsNotNone(plan.range_suggestion)
         self.assertTrue(plan.guardrails.dry_run_only)
         self.assertFalse(plan.guardrails.execution_enabled)
         self.assertIn("execution-disabled", plan.guardrails.blocked_reasons)

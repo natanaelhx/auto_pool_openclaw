@@ -153,7 +153,8 @@ Nesta etapa nao ha signer, assinatura nem broadcast.
 ### 0.4.0
 
 - Historico CoinGecko opcional para ativos sem Binance.
-- Correlacao entre ativos e range dinamico sugerido para pools concentradas.
+- Range dinamico sugerido para pools concentradas.
+- Gatilho de rebalance e confianca do range.
 
 ### 0.5.0
 

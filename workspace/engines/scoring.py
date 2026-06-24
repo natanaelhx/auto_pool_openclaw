@@ -1,5 +1,6 @@
 from engines.impermanent_loss import estimate_il
 from engines.lateralization import estimate_lateralization_days, estimate_lateralization_score, estimate_pair_volatility
+from engines.range_suggestion import suggest_range
 from engines.risk import estimate_drawdown, guardrails, liquidity_score
 from engines.scenarios import classify_pair, scenario_for_profile
 from models.schemas import PoolScore
@@ -9,6 +10,7 @@ def score_pool(pool, profile: str, market_metrics=None) -> PoolScore:
     liquidity = liquidity_score(pool.tvl_usd, pool.volume_24h_usd)
     lateral = estimate_lateralization_score(pool.assets, market_metrics)
     lateral_days = estimate_lateralization_days(lateral)
+    range_suggestion = suggest_range(market_metrics, profile)
     volatility = estimate_pair_volatility(pool.assets, profile, market_metrics)
     il = estimate_il(volatility)
     drawdown = estimate_drawdown(volatility, liquidity, profile)
@@ -87,6 +89,7 @@ def score_pool(pool, profile: str, market_metrics=None) -> PoolScore:
         bollinger_width_pct=round(float((market_metrics or {}).get("bollinger_width_pct") or 0.0), 6),
         adx_14=round(float((market_metrics or {}).get("adx_14") or 0.0), 6),
         trend_regime=str((market_metrics or {}).get("trend_regime") or "unknown"),
+        range_suggestion=range_suggestion,
     )
 
 

@@ -38,6 +38,7 @@ class PoolScore:
     bollinger_width_pct: float = 0.0
     adx_14: float = 0.0
     trend_regime: str = "unknown"
+    range_suggestion: "RangeSuggestion" = None
 
 
 @dataclass
@@ -75,6 +76,7 @@ class PoolExecutionPlan:
     profile: str
     allocation_usd: float
     token_amounts_usd: Dict[str, float]
+    range_suggestion: "RangeSuggestion"
     adapter_family: str
     entry_steps: List[str]
     exit_steps: List[str]
@@ -99,4 +101,16 @@ class ExecutionReceipt:
     blocked_reasons: List[str]
     executed_steps: List[str]
     state_path: str
+    notes: List[str]
+
+
+@dataclass
+class RangeSuggestion:
+    method: str
+    center: str
+    lower_pct: float
+    upper_pct: float
+    width_pct: float
+    rebalance_trigger_pct: float
+    confidence: str
     notes: List[str]

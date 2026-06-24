@@ -54,6 +54,13 @@ def print_summary(scored):
                 f"Bollinger {item.bollinger_width_pct * 100:.2f}% | ADX14 {item.adx_14:.1f} | "
                 f"Regime {item.trend_regime}"
             )
+        if item.range_suggestion:
+            print(
+                "   Range sugerido: "
+                f"{item.range_suggestion.lower_pct * 100:.2f}% a "
+                f"+{item.range_suggestion.upper_pct * 100:.2f}% | "
+                f"confianca {item.range_suggestion.confidence}"
+            )
         print(f"   Drawdown estimado: {item.estimated_drawdown * 100:.2f}% | IL estimado: {item.estimated_il * 100:.2f}%")
         print(f"   Cenario: {item.scenario}")
         if item.blocks:
@@ -135,6 +142,14 @@ def main():
             print(f"Pool: {plan.chain} / {plan.protocol} / {plan.pool}")
             print(f"Adapter: {plan.adapter_family}")
             print(f"Alocacao planejada: US$ {plan.allocation_usd:,.2f}")
+            if plan.range_suggestion:
+                print(
+                    "Range sugerido: "
+                    f"{plan.range_suggestion.lower_pct * 100:.2f}% a "
+                    f"+{plan.range_suggestion.upper_pct * 100:.2f}% "
+                    f"(gatilho {plan.range_suggestion.rebalance_trigger_pct * 100:.2f}%, "
+                    f"confianca {plan.range_suggestion.confidence})"
+                )
             print(f"Execucao habilitada: {plan.guardrails.execution_enabled}")
             print(f"Dry-run only: {plan.guardrails.dry_run_only}")
             print(f"Bloqueios: {'; '.join(plan.guardrails.blocked_reasons) or 'nenhum'}")
@@ -164,6 +179,14 @@ def main():
                 f"RSI14 {best.rsi_14:.1f} | ATR14 {best.atr_pct_14 * 100:.2f}% | "
                 f"Bollinger {best.bollinger_width_pct * 100:.2f}% | ADX14 {best.adx_14:.1f} | "
                 f"Regime {best.trend_regime}"
+            )
+        if best.range_suggestion:
+            print(
+                "Range sugerido: "
+                f"{best.range_suggestion.lower_pct * 100:.2f}% a "
+                f"+{best.range_suggestion.upper_pct * 100:.2f}% | "
+                f"gatilho {best.range_suggestion.rebalance_trigger_pct * 100:.2f}% | "
+                f"confianca {best.range_suggestion.confidence}"
             )
         print(f"Perda maxima estimada por drawdown: US$ {dry_run.max_loss_estimate_usd:,.2f}")
         print(f"IL estimado: US$ {dry_run.il_estimate_usd:,.2f}")

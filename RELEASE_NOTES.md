@@ -1,3 +1,43 @@
+## v0.4.0 — 2026-06-24
+
+> Bump: MINOR
+> Compatibilidade: retrocompativel com v0.3.0
+
+### Added
+- Fallback CoinGecko OHLC para ativos sem candles Binance suficientes.
+- Mapeamento conservador de symbols para CoinGecko IDs.
+- `RangeSuggestion` com `lower_pct`, `upper_pct`, `width_pct`, `rebalance_trigger_pct`, `confidence` e notas.
+- `range_suggestion` em `PoolScore` e `PoolExecutionPlan`.
+- Motor `workspace/engines/range_suggestion.py`.
+- Teste unitario para fallback CoinGecko via monkeypatch local.
+
+### Changed
+- `--market-data` agora tenta Binance primeiro e CoinGecko depois.
+- Planos `plan` e ranking expõem range dinamico para pools concentradas.
+- Docs de API/scoring/roadmap atualizados.
+
+### Security
+- Execucao real continua bloqueada.
+- `COINGECKO_API_KEY` permanece opcional e deve ficar somente em env/secret manager.
+- Nenhuma seed/private key e solicitada.
+
+### Migration Notes
+- Usuarios da v0.3.0 podem continuar usando todos os modos sem mudanca.
+- Para usar fallback CoinGecko autenticado, configurar `COINGECKO_API_KEY` no ambiente.
+- Sem CoinGecko ou sem candles confiaveis, o fallback heuristico permanece ativo.
+
+### Validation
+- [x] `skill.json.version` atualizado para `0.4.0`.
+- [x] `python3 -m py_compile workspace/*.py workspace/adapters/*.py workspace/engines/*.py workspace/models/*.py workspace/state/*.py`.
+- [x] `AUTO_POOLS_USE_SAMPLE=1 python3 -m unittest discover -s tests -v`.
+- [x] Smoke `plan --market-data --json` retorna `range_suggestion`.
+- [x] Smoke `execute open` continua `broadcasted=false` e `tx_hash=null`.
+- [x] Sem secrets, sem `.env`, sem artefatos de runtime versionados.
+
+### Rollback
+- Tag anterior estavel: `v0.3.0`.
+- Procedimento: instalar `v0.3.0` ou publicar patch corretivo sem deletar release publicada.
+
 ## v0.3.0 — 2026-06-24
 
 > Bump: MINOR
