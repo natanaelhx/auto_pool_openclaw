@@ -47,3 +47,7 @@ Campos principais:
 - `wallet.exposure`
 - `watch.reviews`
 - `audit.checks`
+- `swap.steps`
+- `bridge.steps`
+- `broadcasted`
+- `tx_hash`

@@ -1,3 +1,44 @@
+## v0.6.0 — 2026-06-24
+
+> Bump: MINOR
+> Compatibilidade: retrocompativel com v0.5.0
+
+### Added
+- Modo `swap` para gerar plano quote-only de swap sem assinatura e sem broadcast.
+- Modo `bridge` para gerar plano quote-only de bridge entre chains suportadas.
+- Modulo `workspace/ops.py` com guardrails de chain, token, valor, slippage e adaptador.
+- `OperationPlan` para representar planos seguros de swap/bridge.
+- Testes unitarios para swap planejado, token inseguro, bridge planejado e bridge na mesma chain.
+
+### Changed
+- CLI `workspace/auto_pools.py` agora aceita `--mode swap` e `--mode bridge`.
+- Novos argumentos: `--from-chain`, `--to-chain`, `--from-token`, `--to-token`, `--token`, `--amount-usd` e `--slippage-bps`.
+- Docs atualizados com exemplos e invariantes de bridge/swap.
+
+### Security
+- Swap/bridge sao quote-only: nao fazem approve real, assinatura ou broadcast.
+- Slippage e limitado por perfil: conservador 30 bps, moderado 50 bps, agressivo 100 bps.
+- Tokens fora da allowlist segura sao bloqueados.
+- Recibos/planos continuam com `broadcasted=false` e `tx_hash=null`.
+
+### Migration Notes
+- Usuarios da v0.5.0 podem continuar usando todos os modos sem mudanca.
+- Para planejar swap: `python3 workspace/auto_pools.py --mode swap --from-chain base --from-token USDC --to-token ETH --amount-usd 500 --json`.
+- Para planejar bridge: `python3 workspace/auto_pools.py --mode bridge --from-chain base --to-chain arbitrum --token USDC --amount-usd 250 --json`.
+
+### Validation
+- [x] `skill.json.version` atualizado para `0.6.0`.
+- [x] `python3 -m py_compile workspace/*.py workspace/adapters/*.py workspace/engines/*.py workspace/models/*.py workspace/state/*.py`.
+- [x] `AUTO_POOLS_USE_SAMPLE=1 python3 -m unittest -v`.
+- [x] Smoke `swap --json` retorna plano `dry_run_only=true`.
+- [x] Smoke `bridge --json` retorna plano `dry_run_only=true`.
+- [x] Smoke `audit --json` retorna status pass.
+- [x] Sem secrets, sem `.env`, sem artefatos de runtime versionados.
+
+### Rollback
+- Tag anterior estavel: `v0.5.0`.
+- Procedimento: instalar `v0.5.0` ou publicar patch corretivo sem deletar release publicada.
+
 ## v0.5.0 — 2026-06-24
 
 > Bump: MINOR

@@ -14,6 +14,7 @@ from dry_run import simulate
 from models.schemas import PoolCandidate
 from engines.scoring import rank_pools
 from executor import execute_guarded
+from ops import build_bridge_plan, build_swap_plan
 from planner import build_execution_plan
 from state.store import POSITIONS_PATH
 from wallet import analyze_wallet, validate_public_wallet
@@ -222,6 +223,38 @@ class AutoPoolsTest(unittest.TestCase):
         self.assertFalse(review["security"]["broadcasted"])
         self.assertEqual(review["reviews"][0]["position_id"], receipt.position_id)
         self.assertIn(review["reviews"][0]["action"], {"hold", "review"})
+
+    def test_swap_plan_is_quote_only_and_profile_capped(self):
+        plan = build_swap_plan("base", "USDC", "ETH", 500.0, "conservador", slippage_bps=90)
+
+        self.assertEqual(plan.status, "planned")
+        self.assertEqual(plan.adapter_family, "evm-dex-aggregator-quote-only")
+        self.assertEqual(plan.slippage_bps, 30)
+        self.assertTrue(plan.dry_run_only)
+        self.assertFalse(plan.broadcasted)
+        self.assertIsNone(plan.tx_hash)
+
+    def test_swap_plan_blocks_unsafe_or_same_token(self):
+        plan = build_swap_plan("base", "MEME", "MEME", 100.0, "moderado")
+
+        self.assertEqual(plan.status, "blocked")
+        self.assertIn("unsafe-token", plan.blocked_reasons)
+        self.assertIn("same-token-swap", plan.blocked_reasons)
+
+    def test_bridge_plan_is_quote_only(self):
+        plan = build_bridge_plan("base", "arbitrum", "USDC", 250.0, "moderado", slippage_bps=80)
+
+        self.assertEqual(plan.status, "planned")
+        self.assertEqual(plan.adapter_family, "evm-across-stargate-quote-only")
+        self.assertEqual(plan.slippage_bps, 50)
+        self.assertTrue(plan.dry_run_only)
+        self.assertFalse(plan.broadcasted)
+
+    def test_bridge_plan_blocks_same_chain(self):
+        plan = build_bridge_plan("base", "base", "USDC", 250.0, "moderado")
+
+        self.assertEqual(plan.status, "blocked")
+        self.assertIn("same-chain-bridge", plan.blocked_reasons)
 
     def test_audit_reports_no_secret_findings(self):
         audit = run_audit(ROOT)

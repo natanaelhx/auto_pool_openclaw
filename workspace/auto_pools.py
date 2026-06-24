@@ -14,6 +14,7 @@ from audit import run_audit
 from dry_run import simulate
 from engines.scoring import rank_pools
 from executor import execute_guarded
+from ops import build_bridge_plan, build_swap_plan
 from planner import build_execution_plan
 from wallet import analyze_wallet
 from watcher import review_positions
@@ -21,7 +22,7 @@ from watcher import review_positions
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Auto Pool OpenClaw - scan, ranking, dry-run, plano e execucao guardada DeFi.")
-    parser.add_argument("--mode", choices=["scan", "rank", "dry-run", "plan", "execute", "wallet", "watch", "audit", "wizard"], default="rank")
+    parser.add_argument("--mode", choices=["scan", "rank", "dry-run", "plan", "execute", "swap", "bridge", "wallet", "watch", "audit", "wizard"], default="rank")
     parser.add_argument("--action", choices=["open", "close", "collect", "rebalance"], default="open", help="Acao usada no modo execute.")
     parser.add_argument("--position-id", default="", help="ID de posicao simulada para close, collect ou rebalance.")
     parser.add_argument("--confirm", action="store_true", help="Confirmacao explicita para execucao guardada. Nao faz broadcast nesta release.")
@@ -32,6 +33,13 @@ def parse_args():
     parser.add_argument("--allocation-pct", type=float, default=0.08)
     parser.add_argument("--market-data", action="store_true", help="Usa candles publicos quando disponiveis para lateralizacao.")
     parser.add_argument("--wallet-address", default=os.getenv("AUTO_POOLS_WALLET_ADDRESS", ""), help="Endereco publico para modo wallet.")
+    parser.add_argument("--from-chain", default="", help="Chain de origem para bridge/swap.")
+    parser.add_argument("--to-chain", default="", help="Chain de destino para bridge.")
+    parser.add_argument("--from-token", default="", help="Token de origem para swap.")
+    parser.add_argument("--to-token", default="", help="Token de destino para swap.")
+    parser.add_argument("--token", default="", help="Token para bridge.")
+    parser.add_argument("--amount-usd", type=float, default=0.0, help="Valor nocional em USD para swap/bridge.")
+    parser.add_argument("--slippage-bps", type=int, default=0, help="Slippage maximo solicitado em bps; limitado pelo perfil.")
     parser.add_argument("--json", action="store_true", help="Retorna JSON bruto.")
     return parser.parse_args()
 
@@ -124,6 +132,37 @@ def main():
             print(f"Status: {payload['status']}")
             for check in payload["checks"]:
                 print(f"- {check['name']}: {check['status']}")
+        return
+
+    if args.mode == "swap":
+        chain = args.from_chain or args.chain
+        payload = asdict(build_swap_plan(chain, args.from_token, args.to_token, args.amount_usd, args.profile, args.slippage_bps))
+        if args.json:
+            output_json(payload)
+        else:
+            print("Plano de swap")
+            print(f"Status: {payload['status']}")
+            print(f"Rota: {payload['from_chain']} {payload['from_token']} -> {payload['to_token']}")
+            print(f"Valor: US$ {payload['amount_usd']:,.2f} | Slippage: {payload['slippage_bps']} bps")
+            print(f"Adapter: {payload['adapter_family']}")
+            print(f"Broadcast: {payload['broadcasted']}")
+            print(f"Bloqueios: {'; '.join(payload['blocked_reasons']) or 'nenhum'}")
+        return
+
+    if args.mode == "bridge":
+        payload = asdict(
+            build_bridge_plan(args.from_chain, args.to_chain, args.token or args.from_token, args.amount_usd, args.profile, args.slippage_bps)
+        )
+        if args.json:
+            output_json(payload)
+        else:
+            print("Plano de bridge")
+            print(f"Status: {payload['status']}")
+            print(f"Rota: {payload['from_chain']} -> {payload['to_chain']} | Token: {payload['from_token']}")
+            print(f"Valor: US$ {payload['amount_usd']:,.2f} | Slippage: {payload['slippage_bps']} bps")
+            print(f"Adapter: {payload['adapter_family']}")
+            print(f"Broadcast: {payload['broadcasted']}")
+            print(f"Bloqueios: {'; '.join(payload['blocked_reasons']) or 'nenhum'}")
         return
 
     pools = fetch_pools(limit=max(args.limit, 25), chain=args.chain)

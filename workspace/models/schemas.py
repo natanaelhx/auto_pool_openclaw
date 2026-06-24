@@ -114,3 +114,23 @@ class RangeSuggestion:
     rebalance_trigger_pct: float
     confidence: str
     notes: List[str]
+
+
+@dataclass
+class OperationPlan:
+    mode: str
+    status: str
+    profile: str
+    from_chain: str
+    to_chain: Optional[str]
+    from_token: str
+    to_token: str
+    amount_usd: float
+    adapter_family: str
+    slippage_bps: int
+    dry_run_only: bool
+    broadcasted: bool
+    tx_hash: Optional[str]
+    blocked_reasons: List[str]
+    steps: List[str]
+    notes: List[str]

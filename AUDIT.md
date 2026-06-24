@@ -1,4 +1,4 @@
-# Auditoria v0.5.0
+# Auditoria v0.6.0
 
 Data: 2026-06-24
 
@@ -8,6 +8,7 @@ Data: 2026-06-24
 - Validacao de CLI, testes e artefatos runtime.
 - Checagem local de padroes de segredo.
 - Confirmacao de que execucao real segue bloqueada.
+- Validacao dos planos quote-only de swap e bridge.
 
 ## Resultado
 
@@ -18,6 +19,8 @@ Status: aprovado.
 - `wallet`: valida endereco publico EVM/Solana e consolida exposicao simulada.
 - `watch`: revisa posicoes simuladas abertas e gera alertas locais.
 - `audit`: verifica secrets, artefatos runtime ignorados e invariantes de seguranca.
+- `swap`: gera plano quote-only com slippage limitado pelo perfil.
+- `bridge`: gera plano quote-only entre chains suportadas.
 - `python3 -m unittest` agora descobre a suite padrao.
 
 ## Invariantes De Seguranca
@@ -26,6 +29,7 @@ Status: aprovado.
 - Secrets devem ficar somente em env/secret manager.
 - `execute` nao assina transacao.
 - `execute` nao faz broadcast.
+- `swap` e `bridge` nao fazem approve real, assinatura ou broadcast.
 - Recibos continuam com `broadcasted=false` e `tx_hash=null`.
 - Estado local fica em `workspace/state/*.json`, ignorado pelo Git.
 
@@ -37,6 +41,8 @@ Status: aprovado.
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode execute --action open --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --confirm --json`
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode watch --json`
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode audit --json`
+- `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode swap --from-chain base --from-token USDC --to-token ETH --amount-usd 500 --profile conservador --json`
+- `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode bridge --from-chain base --to-chain arbitrum --token USDC --amount-usd 250 --profile moderado --json`
 
 ## Pendencias Intencionais
 

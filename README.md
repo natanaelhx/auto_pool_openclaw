@@ -20,6 +20,7 @@
 - Revisa carteira publica e exposicao simulada por ativo, chain e protocolo.
 - Roda watcher local de posicoes simuladas abertas com alertas de guardrail/range/risco.
 - Roda auditoria local de secrets e artefatos runtime antes de release.
+- Gera plano quote-only de swap e bridge com slippage limitado por perfil, sem assinatura e sem broadcast.
 - Inclui wizard em PT-BR para configurar perfil, capital, limite por pool e dry-run inicial.
 - Aplica guardrails de seguranca para bloquear cenarios ruins.
 - Responde e documenta tudo em portugues do Brasil.
@@ -62,6 +63,8 @@ python3 workspace/auto_pools.py --mode plan --chain base --profile conservador -
 python3 workspace/auto_pools.py --mode plan --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --json
 python3 workspace/auto_pools.py --mode execute --action open --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --confirm --json
 python3 workspace/auto_pools.py --mode execute --action open --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --confirm --json
+python3 workspace/auto_pools.py --mode swap --from-chain base --from-token USDC --to-token ETH --amount-usd 500 --profile conservador --json
+python3 workspace/auto_pools.py --mode bridge --from-chain base --to-chain arbitrum --token USDC --amount-usd 250 --profile moderado --json
 python3 workspace/auto_pools.py --mode wallet --wallet-address 0x0000000000000000000000000000000000000000 --json
 python3 workspace/auto_pools.py --mode watch --json
 python3 workspace/auto_pools.py --mode audit --json
@@ -151,6 +154,17 @@ O modo `watch` revisa posicoes simuladas abertas e gera alertas como `guardrails
 
 O modo `audit` roda checagens locais para secrets, artefatos runtime ignorados e status de seguranca de execucao. Use antes de tag/release.
 
+## Bridge e swap
+
+Os modos `swap` e `bridge` geram plano operacional e quote-only:
+
+- validam chain suportada, token seguro, valor em USD e slippage;
+- limitam slippage pelo perfil: conservador 30 bps, moderado 50 bps, agressivo 100 bps;
+- sugerem familia de adaptador, como `evm-dex-aggregator-quote-only`, `solana-jupiter-quote-only`, `evm-across-stargate-quote-only` ou `wormhole-circle-cctp-quote-only`;
+- sempre retornam `dry_run_only=true`, `broadcasted=false` e `tx_hash=null`.
+
+Esta release nao monta transacao real, nao faz approve real e nao assina nada.
+
 ## Estrutura
 
 ```text
@@ -177,7 +191,7 @@ auto_pool_openclaw/
 
 - Nunca coloque seed phrase, chave privada, token ou cookie no Git.
 - O MVP e dry-run por padrao.
-- Execucao real de transacao esta fora da versao `0.5.0`.
+- Execucao real de transacao esta fora da versao `0.6.0`.
 - Qualquer execucao futura deve usar ENV/secret manager, simulacao previa e confirmacao explicita.
 
 ## Licenca

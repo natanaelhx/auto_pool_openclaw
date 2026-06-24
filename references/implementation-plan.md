@@ -164,10 +164,12 @@ Nesta etapa nao ha signer, assinatura nem broadcast.
 
 ### 0.6.0
 
-- Watcher e alertas.
-- Estado persistente.
-
-Nota da v0.5.0: o watcher local seguro foi antecipado para fechar pendencias sem execucao real. Uma v0.6.0 futura pode adicionar agendamento/alertas externos, mas isso deve pedir confirmacao antes de enviar mensagens.
+- Watcher local seguro e estado persistente foram antecipados na v0.5.0.
+- Plano quote-only de swap.
+- Plano quote-only de bridge.
+- Guardrails de chain, token, valor, slippage e adaptador.
+- Sem assinatura, sem approve real e sem broadcast.
+- Alertas externos/agendados ficam para release futura e devem pedir confirmacao antes de enviar mensagens.
 
 ### 1.0.0
 

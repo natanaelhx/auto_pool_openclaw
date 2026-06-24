@@ -55,7 +55,7 @@ def run_audit(root: str) -> Dict:
             "name": "execution-safety",
             "status": "pass",
             "findings": [],
-            "note": "Modos execute/watch/audit nao assinam nem fazem broadcast.",
+            "note": "Modos execute/swap/bridge/watch/audit nao assinam nem fazem broadcast.",
         },
     ]
     status = "pass" if all(item["status"] == "pass" for item in checks) else "fail"
