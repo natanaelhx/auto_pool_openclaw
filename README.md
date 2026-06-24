@@ -13,6 +13,7 @@
 - Estima tempo de lateralizacao/range.
 - Simula alocacao em modo dry-run sem executar transacao real.
 - Gera plano operacional de entrada, saida, collect fees e rebalance para EVM/Solana sem assinar transacao.
+- Simula execucao guardada de `open`, `close`, `collect` e `rebalance`, com recibo auditavel e sem broadcast.
 - Inclui wizard em PT-BR para configurar perfil, capital, limite por pool e dry-run inicial.
 - Aplica guardrails de seguranca para bloquear cenarios ruins.
 - Responde e documenta tudo em portugues do Brasil.
@@ -53,6 +54,8 @@ python3 workspace/auto_pools.py --mode rank --profile moderado --limit 10 --mark
 python3 workspace/auto_pools.py --mode dry-run --profile conservador --capital 1000 --allocation-pct 0.08
 python3 workspace/auto_pools.py --mode plan --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --json
 python3 workspace/auto_pools.py --mode plan --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --json
+python3 workspace/auto_pools.py --mode execute --action open --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --confirm --json
+python3 workspace/auto_pools.py --mode execute --action open --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --confirm --json
 python3 workspace/wizard.py
 python3 workspace/wizard.py --headless --profile conservador --capital 1000 --allocation-pct 0.08 --limit 10
 ```
@@ -84,6 +87,24 @@ O modo `plan` gera um `PoolExecutionPlan` com:
 
 O campo `guardrails.execution_enabled` fica `false` nesta versao mesmo que `AUTO_POOLS_EXECUTION_ENABLE` exista. Isso e intencional: o repo entrega automacao planejada e testavel, nao assinatura on-chain.
 
+## Execucao guardada
+
+O modo `execute` cria um recibo de simulacao para o ciclo completo de pool:
+
+- `open`: simula preparar approve/add liquidity ou instrucoes SPL/Whirlpool/Raydium;
+- `close`: simula remove liquidity;
+- `collect`: simula coleta de fees;
+- `rebalance`: simula saida em duas fases e nova entrada planejada.
+
+Regras importantes:
+
+- exige `--confirm` para sair de bloqueio por falta de confirmacao;
+- nunca faz broadcast nesta release;
+- sempre retorna `broadcasted=false` e `tx_hash=null`;
+- persiste somente estado simulado em `workspace/state/auto_pools_positions.json`;
+- o estado local fica fora do Git por `.gitignore`;
+- se `AUTO_POOLS_EXECUTION_ENABLE=true` for definido sem `AUTO_POOLS_SIGNER_REF`, o recibo marca `missing-signer-ref`, mas ainda nao transmite transacao.
+
 ## Estrutura
 
 ```text
@@ -109,7 +130,7 @@ auto_pool_openclaw/
 
 - Nunca coloque seed phrase, chave privada, token ou cookie no Git.
 - O MVP e dry-run por padrao.
-- Execucao real de transacao esta fora da versao `0.1.0`.
+- Execucao real de transacao esta fora da versao `0.2.0`.
 - Qualquer execucao futura deve usar ENV/secret manager, simulacao previa e confirmacao explicita.
 
 ## Licenca

@@ -11,7 +11,9 @@ from adapters.market_data import pair_market_metrics
 from dry_run import simulate
 from models.schemas import PoolCandidate
 from engines.scoring import rank_pools
+from executor import execute_guarded
 from planner import build_execution_plan
+from state.store import POSITIONS_PATH
 from wizard import build_config_from_args, run_analysis
 
 
@@ -25,6 +27,10 @@ class Args:
 
 
 class AutoPoolsTest(unittest.TestCase):
+    def tearDown(self):
+        if os.path.exists(POSITIONS_PATH):
+            os.remove(POSITIONS_PATH)
+
     def test_parse_assets_rejects_same_asset_pair(self):
         self.assertEqual(_parse_assets("USDT-USDT"), [])
         self.assertEqual(_parse_assets("ETH-USDC"), ["ETH", "USDC"])
@@ -101,6 +107,25 @@ class AutoPoolsTest(unittest.TestCase):
         plan = build_execution_plan(score, 1000.0, 0.05)
         self.assertEqual(plan.adapter_family, "solana-orca-whirlpools")
         self.assertIn("associated token accounts", " ".join(plan.entry_steps))
+
+    def test_guarded_executor_never_broadcasts(self):
+        ranked = rank_pools(sample_pools(), "conservador", 5)
+        score = [item for item in ranked if item.pool.chain == "base"][0]
+        plan = build_execution_plan(score, 1000.0, 0.08)
+        receipt = execute_guarded(plan, "open", confirm=True)
+        self.assertEqual(receipt.status, "simulated")
+        self.assertFalse(receipt.broadcasted)
+        self.assertIsNone(receipt.tx_hash)
+        self.assertIn("dry-run-only-release", receipt.blocked_reasons)
+        self.assertIn("execution-disabled", receipt.blocked_reasons)
+
+    def test_guarded_executor_requires_confirmation(self):
+        ranked = rank_pools(sample_pools(), "conservador", 5)
+        score = [item for item in ranked if item.pool.chain == "base"][0]
+        plan = build_execution_plan(score, 1000.0, 0.08)
+        receipt = execute_guarded(plan, "open", confirm=False)
+        self.assertEqual(receipt.status, "blocked")
+        self.assertIn("missing-explicit-confirmation", receipt.blocked_reasons)
 
     def test_wizard_headless_runs_without_secrets(self):
         os.environ["AUTO_POOLS_USE_SAMPLE"] = "1"

@@ -139,16 +139,23 @@ Nesta etapa nao ha signer, assinatura nem broadcast.
 
 ### 0.2.0
 
+- Executor guardado para `open`, `close`, `collect` e `rebalance`.
+- Recibo auditavel com `broadcasted=false`, `tx_hash=null`, bloqueios e passos simulados.
+- Estado persistente local de posicoes simuladas.
+- CLI `--mode execute --action ... --confirm`.
+
+### 0.3.0
+
 - Historico CoinGecko.
 - RSI, ATR, Bollinger width e ADX.
 - Lateralizacao por dados reais.
 
-### 0.3.0
+### 0.4.0
 
 - Carteira multichain por endereco.
 - Exposicao por ativo, chain e protocolo.
 
-### 0.4.0
+### 0.5.0
 
 - Watcher e alertas.
 - Estado persistente.

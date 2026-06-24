@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -75,4 +75,23 @@ class PoolExecutionPlan:
     exit_steps: List[str]
     rebalance_steps: List[str]
     guardrails: ExecutionGuardrails
+    notes: List[str]
+
+
+@dataclass
+class ExecutionReceipt:
+    action: str
+    status: str
+    chain: str
+    protocol: str
+    pool: str
+    adapter_family: str
+    position_id: Optional[str]
+    simulated: bool
+    broadcasted: bool
+    tx_hash: Optional[str]
+    guardrails: ExecutionGuardrails
+    blocked_reasons: List[str]
+    executed_steps: List[str]
+    state_path: str
     notes: List[str]

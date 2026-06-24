@@ -1,7 +1,7 @@
 {
   "name": "auto-pool-openclaw",
-  "version": "0.1.0",
-  "description": "Skill OpenClaw para analisar, ranquear, simular e planejar automacao segura de pools DeFi EVM/Solana.",
+  "version": "0.2.0",
+  "description": "Skill OpenClaw para analisar, ranquear, planejar e simular execucao guardada de pools DeFi EVM/Solana.",
   "author": "NatanaelH",
   "license": "Proprietary",
   "homepage": "https://github.com/natanaelhx/auto_pool_openclaw",

@@ -1,6 +1,6 @@
 ---
 name: auto-pool-openclaw
-description: Analisa, ranqueia, simula e planeja automacao segura de pools DeFi em redes EVM e Solana, com APR ajustado por risco, TVL, liquidez, lateralizacao, drawdown, impermanent loss, plano de entrada/saida, guardrails e dry-run. Use para encontrar pools, simular alocacao, preparar add/remove liquidity e revisar riscos antes de qualquer execucao on-chain. Keywords: auto pool, DeFi, LP, EVM, Solana, liquidity pool, APR, TVL, yield, impermanent loss, drawdown, dry-run, planner, guardrails.
+description: Analisa, ranqueia, simula, planeja e executa simulacao guardada de pools DeFi em redes EVM e Solana, com APR ajustado por risco, TVL, liquidez, lateralizacao, drawdown, impermanent loss, plano de entrada/saida, recibos auditaveis, guardrails e dry-run. Use para encontrar pools, simular alocacao, preparar add/remove liquidity, collect fees, rebalance e revisar riscos antes de qualquer execucao on-chain. Keywords: auto pool, DeFi, LP, EVM, Solana, liquidity pool, APR, TVL, yield, impermanent loss, drawdown, dry-run, planner, guarded execution, guardrails.
 ---
 
 # Auto Pool OpenClaw
@@ -43,7 +43,7 @@ A `auto-pools` implementa motor proprio de:
 - `dry-run`: simular alocacao e impacto de carteira.
 - `plan`: gerar plano operacional de entrada/saida/rebalance sem assinar transacao.
 - `watch`: monitoramento futuro de shortlist/posicao.
-- `execute`: reservado para versao futura; nunca execute transacao real nesta versao.
+- `execute`: simulacao guardada de `open`, `close`, `collect` e `rebalance`; nunca faz broadcast nesta versao.
 
 ## Regras de Seguranca
 
@@ -94,6 +94,8 @@ python3 workspace/auto_pools.py --mode rank --chain solana --profile conservador
 python3 workspace/auto_pools.py --mode dry-run --profile conservador --capital 1000 --allocation-pct 0.08
 python3 workspace/auto_pools.py --mode plan --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --json
 python3 workspace/auto_pools.py --mode plan --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --json
+python3 workspace/auto_pools.py --mode execute --action open --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --confirm --json
+python3 workspace/auto_pools.py --mode execute --action open --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --confirm --json
 python3 workspace/wizard.py
 python3 workspace/wizard.py --headless --profile conservador --capital 1000 --allocation-pct 0.08 --limit 10
 ```
@@ -114,6 +116,8 @@ Nesta versao a skill **monta o plano**, mas **nao monta/desmonta pool automatica
 - passos para approve, add liquidity, remove liquidity, collect fees e rebalance;
 - limites de slippage, gas, deadline, drawdown e IL;
 - status de seguranca: `dry_run_only`, `requires_confirmation` e `blocked_reasons`.
+
+O modo `execute` apenas simula a execucao guardada e gera recibo com `broadcasted=false`, `tx_hash=null`, passos executados, bloqueios e `position_id`. Ele pode persistir estado local simulado em `workspace/state/auto_pools_positions.json`, que fica fora do Git.
 
 So trate execucao real como permitida quando uma versao futura implementar signer seguro, simulacao on-chain e confirmacao explicita.
 

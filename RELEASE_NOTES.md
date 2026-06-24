@@ -1,3 +1,42 @@
+## v0.2.0 — 2026-06-24
+
+> Bump: MINOR
+> Compatibilidade: retrocompativel com v0.1.0
+
+### Added
+- Modo `execute` com acoes `open`, `close`, `collect` e `rebalance`.
+- Executor guardado em `workspace/executor.py`, sempre sem assinatura e sem broadcast nesta release.
+- `ExecutionReceipt` com status, `position_id`, passos simulados, bloqueios, `broadcasted=false` e `tx_hash=null`.
+- Store local de posicoes simuladas em `workspace/state/auto_pools_positions.json`.
+- Testes unitarios cobrindo execucao guardada e exigencia de confirmacao explicita.
+
+### Changed
+- CLI `workspace/auto_pools.py` agora aceita `--action`, `--position-id` e `--confirm`.
+- Roadmap atualizado para separar executor guardado, dados historicos, carteira, watcher e execucao real.
+- `.gitignore` agora ignora corretamente `workspace/state/*.json`.
+
+### Security
+- Execucao real continua bloqueada.
+- `execute` exige `--confirm` para simular acao operacional.
+- Seed phrase, private key, token e cookie continuam proibidos no fluxo e fora do Git.
+- O recibo nao expoe caminho absoluto do host.
+
+### Migration Notes
+- Usuarios da v0.1.0 podem continuar usando `scan`, `rank`, `dry-run`, `plan` e `wizard` sem mudanca.
+- Para testar o novo fluxo, usar `--mode execute --action open --confirm --json`.
+
+### Validation
+- [x] `skill.json.version` atualizado para `0.2.0`.
+- [x] `python3 -m py_compile workspace/*.py workspace/adapters/*.py workspace/engines/*.py workspace/models/*.py workspace/state/*.py`.
+- [x] `AUTO_POOLS_USE_SAMPLE=1 python3 -m unittest discover -s tests -v`.
+- [x] Smoke EVM `execute open` com `broadcasted=false`.
+- [x] Smoke Solana `execute open` com `broadcasted=false`.
+- [x] Sem secrets, sem `.env`, sem artefatos de runtime versionados.
+
+### Rollback
+- Tag anterior estavel: `v0.1.0`.
+- Procedimento: instalar `v0.1.0` ou publicar patch corretivo sem deletar release publicada.
+
 ## v0.1.0 — 2026-06-24
 
 > Bump: MINOR

@@ -12,12 +12,16 @@ from adapters.defillama import fetch_pools
 from adapters.market_data import pair_market_metrics
 from dry_run import simulate
 from engines.scoring import rank_pools
+from executor import execute_guarded
 from planner import build_execution_plan
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Auto Pool OpenClaw - scan, ranking, dry-run e plano DeFi.")
-    parser.add_argument("--mode", choices=["scan", "rank", "dry-run", "plan", "wizard"], default="rank")
+    parser = argparse.ArgumentParser(description="Auto Pool OpenClaw - scan, ranking, dry-run, plano e execucao guardada DeFi.")
+    parser.add_argument("--mode", choices=["scan", "rank", "dry-run", "plan", "execute", "wizard"], default="rank")
+    parser.add_argument("--action", choices=["open", "close", "collect", "rebalance"], default="open", help="Acao usada no modo execute.")
+    parser.add_argument("--position-id", default="", help="ID de posicao simulada para close, collect ou rebalance.")
+    parser.add_argument("--confirm", action="store_true", help="Confirmacao explicita para execucao guardada. Nao faz broadcast nesta release.")
     parser.add_argument("--profile", choices=["conservador", "moderado", "agressivo"], default=os.getenv("AUTO_POOLS_DEFAULT_PROFILE", "conservador"))
     parser.add_argument("--chain", choices=["all", "ethereum", "arbitrum", "base", "optimism", "polygon", "solana"], default="all")
     parser.add_argument("--limit", type=int, default=10)
@@ -98,8 +102,25 @@ def main():
         return
 
     best = next((item for item in scored if item.decision != "bloqueado"), scored[0])
-    if args.mode == "plan":
+    if args.mode in {"plan", "execute"}:
         plan = build_execution_plan(best, args.capital, args.allocation_pct)
+        if args.mode == "execute":
+            receipt = execute_guarded(plan, args.action, args.confirm, args.position_id or None)
+            if args.json:
+                output_json({"mode": "execute", "profile": args.profile, "result": asdict(receipt)})
+            else:
+                print("Execucao guardada")
+                print(f"Acao: {receipt.action}")
+                print(f"Status: {receipt.status}")
+                print(f"Pool: {receipt.chain} / {receipt.protocol} / {receipt.pool}")
+                print(f"Position ID: {receipt.position_id}")
+                print(f"Broadcast: {receipt.broadcasted}")
+                print(f"Bloqueios: {'; '.join(receipt.blocked_reasons) or 'nenhum'}")
+                print("Passos simulados:")
+                for step in receipt.executed_steps:
+                    print(f"- {step}")
+            return
+
         if args.json:
             output_json({"mode": "plan", "profile": args.profile, "result": asdict(plan)})
         else:
