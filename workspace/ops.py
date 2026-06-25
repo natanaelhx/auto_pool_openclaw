@@ -2,6 +2,7 @@ from typing import List
 
 from adapters.defillama import SAFE_TOKENS
 from models.schemas import OperationPlan
+from signer import signer_status
 
 
 SUPPORTED_CHAINS = {"ethereum", "arbitrum", "base", "optimism", "polygon", "solana"}
@@ -58,6 +59,7 @@ def build_swap_plan(chain: str, from_token: str, to_token: str, amount_usd: floa
     slippage = _slippage_for_profile(profile, slippage_bps)
     blocked = _amount_block(amount_usd)
     adapter = _swap_adapter(chain)
+    signer = signer_status(chain)
 
     if chain not in SUPPORTED_CHAINS:
         blocked.append("unsupported-chain")
@@ -92,9 +94,11 @@ def build_swap_plan(chain: str, from_token: str, to_token: str, amount_usd: floa
         ],
         notes=[
             "Plano de swap e quote-only; nao assina nem transmite transacao.",
-            "Nunca informar seed phrase, chave privada, token ou cookie.",
-            "Execucao real futura exige signer externo, simulacao on-chain e confirmacao explicita.",
+            "Nunca informar seed phrase, chave privada, token ou cookie no chat.",
+            "Private key local so pode vir de env/secret manager e nao e impressa.",
+            "Broadcast real exige simulacao on-chain e confirmacao explicita.",
         ],
+        signer_status=signer,
     )
 
 
@@ -105,6 +109,7 @@ def build_bridge_plan(from_chain: str, to_chain: str, token: str, amount_usd: fl
     slippage = _slippage_for_profile(profile, slippage_bps)
     blocked = _amount_block(amount_usd)
     adapter = _bridge_adapter(from_chain, to_chain, token)
+    signer = signer_status(from_chain)
 
     if from_chain not in SUPPORTED_CHAINS or to_chain not in SUPPORTED_CHAINS:
         blocked.append("unsupported-chain")
@@ -140,6 +145,8 @@ def build_bridge_plan(from_chain: str, to_chain: str, token: str, amount_usd: fl
         notes=[
             "Plano de bridge e quote-only; nao assina nem transmite transacao.",
             "Preferir stables e blue chips; rotas com token inseguro sao bloqueadas.",
-            "Execucao real futura exige signer externo, simulacao on-chain e confirmacao explicita.",
+            "Private key local so pode vir de env/secret manager e nao e impressa.",
+            "Broadcast real exige simulacao on-chain e confirmacao explicita.",
         ],
+        signer_status=signer,
     )

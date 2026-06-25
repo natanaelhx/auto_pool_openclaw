@@ -1,6 +1,6 @@
-# Auditoria v0.6.0
+# Auditoria v0.7.0
 
-Data: 2026-06-24
+Data: 2026-06-25
 
 ## Escopo
 
@@ -9,6 +9,7 @@ Data: 2026-06-24
 - Checagem local de padroes de segredo.
 - Confirmacao de que execucao real segue bloqueada.
 - Validacao dos planos quote-only de swap e bridge.
+- Validacao de automacao com private key EVM via ENV/secret manager.
 
 ## Resultado
 
@@ -21,11 +22,15 @@ Status: aprovado.
 - `audit`: verifica secrets, artefatos runtime ignorados e invariantes de seguranca.
 - `swap`: gera plano quote-only com slippage limitado pelo perfil.
 - `bridge`: gera plano quote-only entre chains suportadas.
+- `signer`: audita private key EVM local somente via ENV, com fingerprint curta e sem expor segredo.
 - `python3 -m unittest` agora descobre a suite padrao.
 
 ## Invariantes De Seguranca
 
-- Seed phrase e chave privada nao sao solicitadas.
+- Seed phrase nao e solicitada.
+- Chave privada nunca e solicitada em chat, argumento CLI ou arquivo versionado.
+- Private key EVM local so e aceita via ENV/secret manager.
+- Outputs exibem apenas `signer_status` e fingerprint curta.
 - Secrets devem ficar somente em env/secret manager.
 - `execute` nao assina transacao.
 - `execute` nao faz broadcast.
@@ -43,9 +48,10 @@ Status: aprovado.
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode audit --json`
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode swap --from-chain base --from-token USDC --to-token ETH --amount-usd 500 --profile conservador --json`
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode bridge --from-chain base --to-chain arbitrum --token USDC --amount-usd 250 --profile moderado --json`
+- Smoke com `AUTO_POOLS_PRIVATE_KEY` efemera definida somente no ambiente do processo de teste; segredo nao documentado nem persistido.
 
 ## Pendencias Intencionais
 
-- Execucao on-chain real fica fora da v0.5.0.
+- Broadcast on-chain real fica fora da v0.7.0.
 - Alertas externos/agendados devem pedir confirmacao antes de enviar mensagens.
-- Signer seguro, simulacao on-chain e rollback ficam para release futura explicita.
+- Simulacao on-chain, adaptadores transacionais e rollback ficam para release futura explicita.

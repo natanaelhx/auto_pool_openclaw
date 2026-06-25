@@ -1,6 +1,7 @@
 import os
 
 from models.schemas import ExecutionGuardrails, PoolExecutionPlan
+from signer import signer_status
 
 
 EVM_CHAINS = {"ethereum", "arbitrum", "base", "optimism", "polygon"}
@@ -89,14 +90,17 @@ def build_execution_plan(score, capital_usd: float, allocation_pct: float) -> Po
     per_asset = round(allocation_usd / max(len(assets), 1), 2)
     execution_enabled = _truthy(os.getenv("AUTO_POOLS_EXECUTION_ENABLE", "false"))
     signer_ref = os.getenv("AUTO_POOLS_SIGNER_REF", "").strip()
+    signer = signer_status(chain)
 
     blocked = list(score.blocks)
     if score.decision == "bloqueado":
         blocked.append("pool-score-bloqueado")
     if not execution_enabled:
         blocked.append("execution-disabled")
-    if execution_enabled and not signer_ref:
+    if execution_enabled and not signer_ref and not signer.get("private_key_present"):
         blocked.append("missing-signer-ref")
+    if execution_enabled:
+        blocked.extend(signer.get("blocked_reasons", []))
 
     return PoolExecutionPlan(
         action="plan",
@@ -125,7 +129,9 @@ def build_execution_plan(score, capital_usd: float, allocation_pct: float) -> Po
         ),
         notes=[
             "Plano operacional gerado sem assinatura e sem broadcast.",
-            "Seed phrase e chave privada nunca devem ser informadas no chat ou salvas no Git.",
-            "Execucao on-chain real exige release futura com signer seguro, simulacao e confirmacao explicita.",
+            "Seed phrase nunca deve ser informada no chat ou salva no Git.",
+            "Private key local so e aceita via env/secret manager, nunca por argumento CLI ou arquivo versionado.",
+            "Broadcast on-chain real exige simulacao on-chain, confirmacao explicita e adaptador transacional.",
         ],
+        signer_status=signer,
     )

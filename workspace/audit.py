@@ -2,9 +2,11 @@ import os
 import re
 from typing import Dict, List
 
+from signer import signer_status
+
 
 SECRET_RE = re.compile(
-    r"(BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY|ghp_[A-Za-z0-9_]+|sk-[A-Za-z0-9]{20,}|xox[baprs]-|seed phrase\s*=|private_key\s*=|mnemonic\s*=)",
+    r"(BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY|ghp_[A-Za-z0-9_]+|sk-[A-Za-z0-9]{20,}|xox[baprs]-|(^|[^A-Za-z0-9_\"'])(seed phrase|private[_-]?key|mnemonic)\s*[:=]\s*['\"]?[A-Za-z0-9/+_=:-]{20,})",
     re.IGNORECASE,
 )
 
@@ -38,6 +40,7 @@ def scan_for_secrets(root: str) -> List[Dict]:
 
 def run_audit(root: str) -> Dict:
     findings = scan_for_secrets(root)
+    signer = signer_status()
     runtime_artifacts = []
     for rel in ["workspace/state/auto_pools_positions.json", "workspace/state/auto_pools_config.json", ".env"]:
         if os.path.exists(os.path.join(root, rel)):
@@ -55,7 +58,13 @@ def run_audit(root: str) -> Dict:
             "name": "execution-safety",
             "status": "pass",
             "findings": [],
-            "note": "Modos execute/swap/bridge/watch/audit nao assinam nem fazem broadcast.",
+            "note": "Modos execute/swap/bridge/watch/audit nao fazem broadcast; signer local e apenas auditado.",
+        },
+        {
+            "name": "signer-readiness",
+            "status": "pass" if "invalid-private-key-format" not in signer["blocked_reasons"] else "fail",
+            "findings": signer["blocked_reasons"],
+            "note": "Private key deve ficar em env/secret manager; auditoria nao imprime o segredo.",
         },
     ]
     status = "pass" if all(item["status"] == "pass" for item in checks) else "fail"
@@ -65,7 +74,9 @@ def run_audit(root: str) -> Dict:
         "checks": checks,
         "security": {
             "seed_phrase_allowed": False,
-            "private_key_allowed": False,
+            "private_key_env_allowed": True,
+            "private_key_in_chat_or_git_allowed": False,
             "broadcast_enabled": False,
+            "signer": signer,
         },
     }

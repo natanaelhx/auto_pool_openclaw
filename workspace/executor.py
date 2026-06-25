@@ -4,6 +4,7 @@ from dataclasses import asdict
 from typing import List, Optional
 
 from models.schemas import ExecutionReceipt, PoolExecutionPlan
+from signer import signer_status
 from state.store import find_position, upsert_position
 
 
@@ -52,12 +53,15 @@ def execute_guarded(
 
     requested_enabled = _truthy(os.getenv("AUTO_POOLS_EXECUTION_ENABLE", "false"))
     signer_ref = os.getenv("AUTO_POOLS_SIGNER_REF", "").strip()
+    signer = signer_status(plan.chain)
     blocked = set(plan.guardrails.blocked_reasons)
 
     if not requested_enabled:
         blocked.add("execution-disabled")
-    if requested_enabled and not signer_ref:
+    if requested_enabled and not signer_ref and not signer.get("private_key_present"):
         blocked.add("missing-signer-ref")
+    if requested_enabled:
+        blocked.update(signer.get("blocked_reasons", []))
     if not confirm:
         blocked.add("missing-explicit-confirmation")
     if plan.guardrails.dry_run_only:
@@ -81,7 +85,8 @@ def execute_guarded(
     notes = [
         "Execucao guardada concluida sem assinatura e sem broadcast.",
         "Esta release persiste somente estado simulado para auditoria local.",
-        "Para execucao real futura, usar signer externo via secret manager e simulacao on-chain obrigatoria.",
+        "Private key local, quando usada, deve vir somente de env/secret manager e nunca e impressa.",
+        "Broadcast on-chain permanece bloqueado ate existir simulacao on-chain e adaptador transacional explicito.",
     ]
 
     if status == "simulated":
@@ -127,4 +132,5 @@ def execute_guarded(
         executed_steps=steps,
         state_path="workspace/state/auto_pools_positions.json",
         notes=notes,
+        signer_status=signer,
     )

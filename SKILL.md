@@ -1,6 +1,6 @@
 ---
 name: auto-pool-openclaw
-description: Analisa, ranqueia, simula, planeja, audita e executa simulacao guardada de pools DeFi, swap e bridge em redes EVM e Solana, com APR ajustado por risco, TVL, liquidez, RSI, ATR, Bollinger width, ADX, lateralizacao, range dinamico, exposicao de carteira, watcher, drawdown, impermanent loss, recibos auditaveis, guardrails e dry-run. Use para encontrar pools, simular LP, preparar add/remove liquidity, collect fees, rebalance, swap, bridge e revisar riscos antes de qualquer execucao on-chain. Keywords: auto pool, DeFi, LP, EVM, Solana, liquidity pool, swap, bridge, wallet, watcher, audit, APR, TVL, RSI, ATR, ADX, Bollinger, dynamic range, yield, impermanent loss, drawdown, dry-run, planner, guarded execution, guardrails.
+description: Analisa, ranqueia, simula, planeja, audita e executa simulacao guardada de pools DeFi, swap e bridge em redes EVM e Solana, com signer privado via ENV, APR ajustado por risco, TVL, liquidez, RSI, ATR, Bollinger width, ADX, lateralizacao, range dinamico, exposicao de carteira, watcher, drawdown, impermanent loss, recibos auditaveis, guardrails e dry-run. Use para encontrar pools, simular LP, preparar add/remove liquidity, collect fees, rebalance, swap, bridge, validar private key em secret manager e revisar riscos antes de qualquer execucao on-chain. Keywords: auto pool, DeFi, LP, EVM, Solana, liquidity pool, private key, signer, swap, bridge, wallet, watcher, audit, APR, TVL, RSI, ATR, ADX, Bollinger, dynamic range, yield, impermanent loss, drawdown, dry-run, planner, guarded execution, guardrails.
 ---
 
 # Auto Pool OpenClaw
@@ -18,6 +18,7 @@ Skill standalone para analise, ranking, simulacao e planejamento operacional de 
 - O usuario quer revisar exposicao simulada por carteira publica, chain, protocolo e ativo.
 - O usuario quer watcher/alertas locais ou auditoria de seguranca do repo.
 - O usuario quer preparar swap ou bridge com quote/plano seguro antes de assinar qualquer transacao.
+- O usuario quer validar automacao com private key guardada em ENV/secret manager, sem expor segredo no chat.
 
 ## Principio de Arquitetura
 
@@ -38,6 +39,7 @@ A `auto-pools` implementa motor proprio de:
 - exposicao de carteira;
 - watcher e auditoria local;
 - plano quote-only de swap e bridge;
+- auditoria de signer local/private key EVM via ENV;
 - dry-run;
 - saida operacional em PT-BR.
 
@@ -60,13 +62,16 @@ A `auto-pools` implementa motor proprio de:
 - Responder sempre em portugues do Brasil.
 - Nunca pedir seed phrase em chat.
 - Nunca salvar seed phrase em arquivo.
+- Nunca pedir private key em chat, argumento CLI ou arquivo.
 - Nunca commitar secrets, tokens, cookies ou chaves privadas.
+- Quando private key for necessaria para teste local, usar apenas `AUTO_POOLS_PRIVATE_KEY` em ENV/secret manager.
 - Operar em `dry-run` por padrao.
 - Gerar planos com `execution_enabled=false` por padrao.
 - Bloquear cenarios com TVL baixo, APR suspeito, liquidez fraca ou drawdown acima do limite.
 - Nunca sugerir alocar 100% da carteira.
 - Sugerir limites conservadores por pool, protocolo, chain e ativo.
-- Para execucao real futura, exigir `AUTO_POOLS_EXECUTION_ENABLE=true`, signer externo por `AUTO_POOLS_SIGNER_REF`, simulacao previa e confirmacao explicita.
+- Para automacao com private key, validar apenas via ENV/secret manager: `AUTO_POOLS_PRIVATE_KEY`, opcionalmente `AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER=true` em ambiente controlado. O output deve mostrar somente `signer_status` e fingerprint curta, nunca a chave.
+- Para broadcast real futuro, exigir `AUTO_POOLS_EXECUTION_ENABLE=true`, signer seguro, simulacao on-chain previa e confirmacao explicita.
 
 ## Como Responder
 
@@ -125,7 +130,7 @@ O score e o plano incluem `range_suggestion` com centro, largura, limite inferio
 
 O wizard deve conduzir onboarding em portugues do Brasil, uma pergunta por vez e com emoji na pergunta. Ele pode pedir perfil, capital de referencia, percentual maximo por pool, quantidade de pools no ranking, endereco publico da carteira e modo de automacao.
 
-O wizard nunca deve pedir seed phrase, chave privada, token ou cookie. A automacao real permanece desativada nesta versao; qualquer signer futuro deve vir de variavel de ambiente ou secret manager, nunca de texto colado no chat ou arquivo versionado.
+O wizard nunca deve pedir seed phrase, chave privada, token ou cookie. Private key so pode ser configurada fora do chat, no ambiente/secret manager do MQC. Broadcast real permanece desativado nesta versao.
 
 ## Automacao De Pools
 
@@ -142,7 +147,7 @@ O modo `wallet` aceita somente endereco publico e calcula exposicao a partir de 
 
 Os modos `swap` e `bridge` sao quote-only/planner: validam chain, token, valor, slippage e adaptador sugerido, mas retornam `dry_run_only=true`, `broadcasted=false` e `tx_hash=null`.
 
-So trate execucao real como permitida quando uma versao futura implementar signer seguro, simulacao on-chain e confirmacao explicita.
+So trate broadcast real como permitido quando uma versao futura implementar simulacao on-chain, adaptador transacional e confirmacao explicita. A v0.7.0 apenas audita readiness de signer/private key e mantem `broadcasted=false`.
 
 ## Plano Completo
 

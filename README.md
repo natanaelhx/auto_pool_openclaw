@@ -21,6 +21,7 @@
 - Roda watcher local de posicoes simuladas abertas com alertas de guardrail/range/risco.
 - Roda auditoria local de secrets e artefatos runtime antes de release.
 - Gera plano quote-only de swap e bridge com slippage limitado por perfil, sem assinatura e sem broadcast.
+- Audita signer local com private key EVM vinda somente de ENV/secret manager, sem imprimir ou salvar o segredo.
 - Inclui wizard em PT-BR para configurar perfil, capital, limite por pool e dry-run inicial.
 - Aplica guardrails de seguranca para bloquear cenarios ruins.
 - Responde e documenta tudo em portugues do Brasil.
@@ -35,8 +36,11 @@
 | DUNE_API_KEY | Opcional, Dashboard -> Chaves e Segredos |
 | AUTO_POOLS_WALLET_ADDRESS | Opcional, endereco publico para analise de carteira |
 | AUTO_POOLS_DEFAULT_PROFILE | Opcional: conservador, moderado ou agressivo |
-| AUTO_POOLS_EXECUTION_ENABLE | Futuro, deve ficar ausente/false nesta versao |
-| AUTO_POOLS_SIGNER_REF | Futuro, referencia de signer externo via secret manager |
+| AUTO_POOLS_EXECUTION_ENABLE | Opcional; habilita auditoria de signer, mas broadcast continua bloqueado |
+| AUTO_POOLS_SIGNER_REF | Opcional; referencia de signer externo via secret manager |
+| AUTO_POOLS_PRIVATE_KEY | Opcional para auditoria local de signer EVM; nunca usar em chat ou Git |
+| AUTO_POOLS_EVM_PRIVATE_KEY / EVM_PRIVATE_KEY | Aliases legados opcionais |
+| AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER | Opcional; `true` permite preparar signer local em ambiente controlado |
 
 ## Exemplos de Uso
 
@@ -85,7 +89,7 @@ Campos configurados:
 - endereco publico da carteira, opcional;
 - modo de automacao: `dry-run` ou `guarded`.
 
-Esta versao nao executa transacao real. Seed phrase e chave privada nao sao solicitadas, nao sao aceitas e nao devem ser salvas no repositorio. Para uma versao futura com execucao, usar apenas signer externo via secret manager/ENV.
+Esta versao nao executa broadcast on-chain. Seed phrase nao e solicitada nem aceita. Chave privada local so pode ser lida de ENV/secret manager para auditoria/preparacao de signer EVM, nunca por argumento CLI, chat ou arquivo versionado.
 
 ## Plano de automacao
 
@@ -144,7 +148,24 @@ Regras importantes:
 - sempre retorna `broadcasted=false` e `tx_hash=null`;
 - persiste somente estado simulado em `workspace/state/auto_pools_positions.json`;
 - o estado local fica fora do Git por `.gitignore`;
-- se `AUTO_POOLS_EXECUTION_ENABLE=true` for definido sem `AUTO_POOLS_SIGNER_REF`, o recibo marca `missing-signer-ref`, mas ainda nao transmite transacao.
+- se `AUTO_POOLS_EXECUTION_ENABLE=true` for definido sem `AUTO_POOLS_SIGNER_REF` ou `AUTO_POOLS_PRIVATE_KEY`, o recibo marca signer ausente, mas ainda nao transmite transacao;
+- se `AUTO_POOLS_PRIVATE_KEY` existir, o recibo mostra apenas status/fingerprint curta, nunca o valor da chave.
+
+## Private key e signer local
+
+Fluxo seguro para automacao com chave privada:
+
+1. Salvar a chave em secret manager/ENV como `AUTO_POOLS_PRIVATE_KEY`.
+2. Opcionalmente habilitar teste local com `AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER=true`.
+3. Rodar `python3 workspace/auto_pools.py --mode audit --json` para validar formato e readiness.
+4. Rodar `execute --confirm --json` para obter recibo auditavel com `signer_status`.
+
+Invariantes:
+
+- a chave nao pode ser passada por argumento CLI;
+- a chave nao e impressa em JSON, logs ou docs;
+- Solana private key local segue bloqueada nesta release;
+- broadcast real continua bloqueado ate existir simulacao on-chain e adaptador transacional explicito.
 
 ## Carteira, watcher e auditoria
 
@@ -191,7 +212,7 @@ auto_pool_openclaw/
 
 - Nunca coloque seed phrase, chave privada, token ou cookie no Git.
 - O MVP e dry-run por padrao.
-- Execucao real de transacao esta fora da versao `0.6.0`.
+- Broadcast real de transacao esta fora da versao `0.7.0`.
 - Qualquer execucao futura deve usar ENV/secret manager, simulacao previa e confirmacao explicita.
 
 ## Licenca

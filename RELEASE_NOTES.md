@@ -1,3 +1,43 @@
+## v0.7.0 — 2026-06-25
+
+> Bump: MINOR
+> Compatibilidade: retrocompativel com v0.6.0
+
+### Added
+- Modulo `workspace/signer.py` para auditar signer externo ou private key EVM local via ENV/secret manager.
+- Suporte a `AUTO_POOLS_PRIVATE_KEY`, aliases legados EVM e `AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER`.
+- `signer_status` em planos, recibos e planos quote-only, sempre sem expor o segredo.
+- Auditoria `signer-readiness` no modo `audit`.
+- Testes unitarios para private key valida, chave malformada e recibo com signer local.
+
+### Changed
+- Docs e SKILL.md agora descrevem o fluxo seguro de automacao com private key.
+- `execute` diferencia signer externo, signer local EVM e signer ausente.
+- `AUDIT.md` atualizado para cobrir automacao com private key e invariantes de nao-broadcast.
+
+### Security
+- Private key nunca e aceita via chat, argumento CLI ou arquivo versionado.
+- A chave nao e impressa; apenas env name, formato, readiness e fingerprint curta sao exibidos.
+- Solana private key local permanece bloqueada nesta release.
+- Broadcast real continua bloqueado: `broadcasted=false` e `tx_hash=null`.
+
+### Migration Notes
+- Usuarios da v0.6.0 podem continuar usando todos os modos sem mudanca.
+- Para auditar signer local EVM, salvar a chave como `AUTO_POOLS_PRIVATE_KEY` no secret manager/ENV e rodar `audit --json`.
+- `AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER=true` deve ser usado somente em ambiente controlado para teste local.
+
+### Validation
+- [x] `skill.json.version` atualizado para `0.7.0`.
+- [x] `python3 -m py_compile workspace/*.py workspace/adapters/*.py workspace/engines/*.py workspace/models/*.py workspace/state/*.py`.
+- [x] `AUTO_POOLS_USE_SAMPLE=1 python3 -m unittest -v`.
+- [x] Smoke `audit --json` retorna `signer-readiness`.
+- [x] Smoke `execute --confirm --json` com private key efemera retorna `signer_status` sem segredo.
+- [x] Sem secrets, sem `.env`, sem artefatos de runtime versionados.
+
+### Rollback
+- Tag anterior estavel: `v0.6.0`.
+- Procedimento: instalar `v0.6.0` ou publicar patch corretivo sem deletar release publicada.
+
 ## v0.6.0 — 2026-06-24
 
 > Bump: MINOR

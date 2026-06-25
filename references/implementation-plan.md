@@ -171,6 +171,14 @@ Nesta etapa nao ha signer, assinatura nem broadcast.
 - Sem assinatura, sem approve real e sem broadcast.
 - Alertas externos/agendados ficam para release futura e devem pedir confirmacao antes de enviar mensagens.
 
+### 0.7.0
+
+- Auditoria de signer externo ou private key EVM local via ENV/secret manager.
+- `signer_status` em planos, recibos e operacoes quote-only.
+- Fingerprint curta para auditoria sem expor private key.
+- Rejeicao de chave malformada e bloqueio de private key Solana local nesta release.
+- Broadcast real continua bloqueado.
+
 ### 1.0.0
 
 - Execucao real com secrets por ambiente/secret manager, simulacao, confirmacao e rollback.

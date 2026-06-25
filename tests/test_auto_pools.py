@@ -16,6 +16,7 @@ from engines.scoring import rank_pools
 from executor import execute_guarded
 from ops import build_bridge_plan, build_swap_plan
 from planner import build_execution_plan
+from signer import signer_status
 from state.store import POSITIONS_PATH
 from wallet import analyze_wallet, validate_public_wallet
 from watcher import review_positions
@@ -35,6 +36,15 @@ class AutoPoolsTest(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(POSITIONS_PATH):
             os.remove(POSITIONS_PATH)
+        for name in [
+            "AUTO_POOLS_PRIVATE_KEY",
+            "AUTO_POOLS_EVM_PRIVATE_KEY",
+            "EVM_PRIVATE_KEY",
+            "AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER",
+            "AUTO_POOLS_EXECUTION_ENABLE",
+            "AUTO_POOLS_SIGNER_REF",
+        ]:
+            os.environ.pop(name, None)
 
     def test_parse_assets_rejects_same_asset_pair(self):
         self.assertEqual(_parse_assets("USDT-USDT"), [])
@@ -261,6 +271,46 @@ class AutoPoolsTest(unittest.TestCase):
         secret_scan = [item for item in audit["checks"] if item["name"] == "secret-scan"][0]
         self.assertEqual(secret_scan["status"], "pass")
         self.assertFalse(audit["security"]["broadcast_enabled"])
+        self.assertTrue(audit["security"]["private_key_env_allowed"])
+        self.assertFalse(audit["security"]["private_key_in_chat_or_git_allowed"])
+
+    def test_signer_status_accepts_private_key_from_env_without_exposing_secret(self):
+        os.environ["AUTO_POOLS_PRIVATE_KEY"] = "0x" + ("1" * 64)
+        os.environ["AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER"] = "true"
+
+        status = signer_status("base")
+
+        self.assertEqual(status["signer_type"], "evm-local-private-key")
+        self.assertEqual(status["private_key_format"], "evm-hex-32-byte")
+        self.assertTrue(status["can_prepare_local_signature"])
+        self.assertEqual(status["private_key_env"], "AUTO_POOLS_PRIVATE_KEY")
+        self.assertNotIn("1" * 64, str(status))
+
+    def test_signer_status_rejects_malformed_private_key(self):
+        os.environ["AUTO_POOLS_PRIVATE_KEY"] = "not-a-private-key"
+        os.environ["AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER"] = "true"
+
+        status = signer_status("base")
+
+        self.assertEqual(status["signer_type"], "invalid-local-private-key")
+        self.assertIn("invalid-private-key-format", status["blocked_reasons"])
+        self.assertFalse(status["can_prepare_local_signature"])
+
+    def test_guarded_executor_reports_private_key_signer_readiness(self):
+        os.environ["AUTO_POOLS_USE_SAMPLE"] = "1"
+        os.environ["AUTO_POOLS_EXECUTION_ENABLE"] = "true"
+        os.environ["AUTO_POOLS_PRIVATE_KEY"] = "0x" + ("2" * 64)
+        os.environ["AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER"] = "true"
+        ranked = rank_pools(sample_pools(), "conservador", 5)
+        score = [item for item in ranked if item.pool.chain == "base"][0]
+        plan = build_execution_plan(score, 1000.0, 0.08)
+
+        receipt = execute_guarded(plan, "open", confirm=True)
+
+        self.assertEqual(receipt.signer_status["signer_type"], "evm-local-private-key")
+        self.assertTrue(receipt.signer_status["can_prepare_local_signature"])
+        self.assertFalse(receipt.broadcasted)
+        self.assertIsNone(receipt.tx_hash)
 
     def test_guarded_executor_requires_confirmation(self):
         ranked = rank_pools(sample_pools(), "conservador", 5)

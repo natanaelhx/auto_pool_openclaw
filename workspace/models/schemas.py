@@ -83,6 +83,7 @@ class PoolExecutionPlan:
     rebalance_steps: List[str]
     guardrails: ExecutionGuardrails
     notes: List[str]
+    signer_status: Dict = field(default_factory=dict)
 
 
 @dataclass
@@ -102,6 +103,7 @@ class ExecutionReceipt:
     executed_steps: List[str]
     state_path: str
     notes: List[str]
+    signer_status: Dict = field(default_factory=dict)
 
 
 @dataclass
@@ -134,3 +136,4 @@ class OperationPlan:
     blocked_reasons: List[str]
     steps: List[str]
     notes: List[str]
+    signer_status: Dict = field(default_factory=dict)
