@@ -9,6 +9,7 @@ sys.path.insert(0, WORKSPACE)
 from adapters.defillama import _normalize_apr, _parse_assets, _source_filter_reasons, fetch_pools, sample_pools
 from adapters import market_data
 from adapters.market_data import pair_market_metrics
+from autonomy import run_autonomy_cycle
 from audit import run_audit
 from dry_run import simulate
 from models.schemas import PoolCandidate
@@ -17,7 +18,7 @@ from executor import execute_guarded
 from ops import build_bridge_plan, build_swap_plan
 from planner import build_execution_plan
 from signer import signer_status
-from state.store import POSITIONS_PATH
+from state.store import DECISIONS_PATH, POSITIONS_PATH
 from wallet import analyze_wallet, validate_public_wallet
 from watcher import review_positions
 from wizard import build_config_from_args, run_analysis
@@ -36,6 +37,8 @@ class AutoPoolsTest(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(POSITIONS_PATH):
             os.remove(POSITIONS_PATH)
+        if os.path.exists(DECISIONS_PATH):
+            os.remove(DECISIONS_PATH)
         for name in [
             "AUTO_POOLS_PRIVATE_KEY",
             "AUTO_POOLS_EVM_PRIVATE_KEY",
@@ -43,6 +46,17 @@ class AutoPoolsTest(unittest.TestCase):
             "AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER",
             "AUTO_POOLS_EXECUTION_ENABLE",
             "AUTO_POOLS_SIGNER_REF",
+            "AUTO_POOLS_AUTONOMY_ENABLE",
+            "AUTO_POOLS_OPEN_IF_CLEAR",
+            "AUTO_POOLS_DAILY_BUDGET_USD",
+            "AUTO_POOLS_MAX_OPEN_POSITIONS",
+            "AUTO_POOLS_MIN_SCORE",
+            "AUTO_POOLS_CAPITAL_USD",
+            "AUTO_POOLS_ALLOCATION_PCT",
+            "AUTO_POOLS_LIMIT",
+            "AUTO_POOLS_CHAIN",
+            "AUTO_POOLS_MARKET_DATA",
+            "AUTO_POOLS_USE_SAMPLE",
         ]:
             os.environ.pop(name, None)
 
@@ -327,6 +341,59 @@ class AutoPoolsTest(unittest.TestCase):
         self.assertFalse(result["security"]["seed_phrase_allowed"])
         self.assertFalse(result["security"]["execution_enabled"])
         self.assertIn("best", result)
+
+    def test_autonomy_cycle_stays_disabled_by_default(self):
+        os.environ["AUTO_POOLS_USE_SAMPLE"] = "1"
+
+        result = run_autonomy_cycle({"enabled": False, "open_if_clear": True, "chain": "base"})
+
+        self.assertEqual(result["decision"], "candidate-held")
+        self.assertIn("autonomy-disabled", result["blocked_reasons"])
+        self.assertFalse(result["security"]["broadcasted"])
+        self.assertTrue(os.path.exists(DECISIONS_PATH))
+
+    def test_autonomy_cycle_can_open_simulated_position_when_clear(self):
+        os.environ["AUTO_POOLS_USE_SAMPLE"] = "1"
+
+        result = run_autonomy_cycle(
+            {
+                "enabled": True,
+                "open_if_clear": True,
+                "chain": "base",
+                "profile": "conservador",
+                "capital_usd": 1000.0,
+                "allocation_pct": 0.08,
+                "daily_budget_usd": 250.0,
+                "max_open_positions": 3,
+                "min_score": 60.0,
+            }
+        )
+
+        self.assertEqual(result["decision"], "open-simulated")
+        self.assertEqual(result["blocked_reasons"], [])
+        self.assertIn("execution-disabled", result["advisory_reasons"])
+        self.assertIsNotNone(result["receipt"])
+        self.assertFalse(result["receipt"]["broadcasted"])
+        self.assertTrue(os.path.exists(POSITIONS_PATH))
+
+    def test_autonomy_cycle_respects_daily_budget(self):
+        os.environ["AUTO_POOLS_USE_SAMPLE"] = "1"
+
+        result = run_autonomy_cycle(
+            {
+                "enabled": True,
+                "open_if_clear": True,
+                "chain": "base",
+                "capital_usd": 1000.0,
+                "allocation_pct": 0.08,
+                "daily_budget_usd": 50.0,
+                "max_open_positions": 3,
+                "min_score": 60.0,
+            }
+        )
+
+        self.assertEqual(result["decision"], "candidate-held")
+        self.assertIn("daily-budget-exceeded", result["blocked_reasons"])
 
 
 if __name__ == "__main__":

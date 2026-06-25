@@ -1,3 +1,44 @@
+## v0.8.0 — 2026-06-25
+
+> Bump: MINOR
+> Compatibilidade: retrocompativel com v0.7.0
+
+### Added
+- Modo `auto` para rodar um ciclo autonomo simulado com `audit`, `watch`, ranking, plano, guardrails e decisao persistida.
+- Modulo `workspace/autonomy.py` com configuracao por wizard, ENV e CLI.
+- Store de decisoes em `workspace/state/auto_pools_decisions.json`, ignorado pelo Git.
+- Guardrails de autonomia: `AUTO_POOLS_MIN_SCORE`, `AUTO_POOLS_MAX_OPEN_POSITIONS` e `AUTO_POOLS_DAILY_BUDGET_USD`.
+- Flags `--autonomy-enable`, `--open-if-clear`, `--min-score`, `--max-open-positions` e `--daily-budget-usd`.
+- Testes unitarios para autonomia desativada, abertura simulada quando limpa e bloqueio por orcamento diario.
+
+### Changed
+- `audit` agora reconhece `workspace/state/auto_pools_decisions.json` como artefato runtime ignorado.
+- README e SKILL.md documentam o fluxo autonomo seguro e os novos ENV vars.
+- `skill.json` atualizado para `0.8.0` e inclui as variaveis de autonomia.
+
+### Security
+- O ciclo `auto` nunca assina nem transmite transacao.
+- Mesmo com `--open-if-clear`, a abertura e somente simulada: `broadcasted=false` e `tx_hash=null`.
+- `blocked_reasons` separa bloqueios de risco de `advisory_reasons` como signer ausente ou execucao real desativada.
+- Private key continua permitida apenas via ENV/secret manager e nunca aparece no output.
+
+### Migration Notes
+- Usuarios da v0.7.0 podem continuar usando todos os modos sem mudanca.
+- Para testar autonomia simulada: `python3 workspace/auto_pools.py --mode auto --autonomy-enable --open-if-clear --json`.
+- Para usar em MQC, salvar limites no ambiente e manter secrets fora do Git.
+
+### Validation
+- [x] `skill.json.version` atualizado para `0.8.0`.
+- [x] `python3 -m py_compile workspace/*.py workspace/adapters/*.py workspace/engines/*.py workspace/models/*.py workspace/state/*.py`.
+- [x] `python3 -m unittest tests/test_auto_pools.py`.
+- [x] Smoke `auto --json` retorna decisao, audit, watch, plano e `broadcasted=false`.
+- [x] `audit --json` retorna status pass.
+- [x] Sem secrets, sem `.env`, sem artefatos de runtime versionados.
+
+### Rollback
+- Tag anterior estavel: `v0.7.0`.
+- Procedimento: instalar `v0.7.0` ou publicar patch corretivo sem deletar release publicada.
+
 ## v0.7.0 — 2026-06-25
 
 > Bump: MINOR

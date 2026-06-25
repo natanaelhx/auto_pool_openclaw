@@ -1,4 +1,4 @@
-# Auditoria v0.7.0
+# Auditoria v0.8.0
 
 Data: 2026-06-25
 
@@ -10,6 +10,7 @@ Data: 2026-06-25
 - Confirmacao de que execucao real segue bloqueada.
 - Validacao dos planos quote-only de swap e bridge.
 - Validacao de automacao com private key EVM via ENV/secret manager.
+- Validacao do ciclo autonomo simulado com limites e decisao persistida.
 
 ## Resultado
 
@@ -23,6 +24,7 @@ Status: aprovado.
 - `swap`: gera plano quote-only com slippage limitado pelo perfil.
 - `bridge`: gera plano quote-only entre chains suportadas.
 - `signer`: audita private key EVM local somente via ENV, com fingerprint curta e sem expor segredo.
+- `auto`: executa audit, watch, ranking, plano, limites e abertura simulada opcional.
 - `python3 -m unittest` agora descobre a suite padrao.
 
 ## Invariantes De Seguranca
@@ -37,6 +39,8 @@ Status: aprovado.
 - `swap` e `bridge` nao fazem approve real, assinatura ou broadcast.
 - Recibos continuam com `broadcasted=false` e `tx_hash=null`.
 - Estado local fica em `workspace/state/*.json`, ignorado pelo Git.
+- Autonomia real on-chain segue bloqueada; `auto` persiste apenas decisoes e posicoes simuladas.
+- Limites de autonomia incluem score minimo, maximo de posicoes abertas e orcamento diario simulado.
 
 ## Validacao Executada
 
@@ -48,10 +52,11 @@ Status: aprovado.
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode audit --json`
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode swap --from-chain base --from-token USDC --to-token ETH --amount-usd 500 --profile conservador --json`
 - `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode bridge --from-chain base --to-chain arbitrum --token USDC --amount-usd 250 --profile moderado --json`
+- `AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode auto --autonomy-enable --open-if-clear --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --daily-budget-usd 250 --min-score 60 --json`
 - Smoke com `AUTO_POOLS_PRIVATE_KEY` efemera definida somente no ambiente do processo de teste; segredo nao documentado nem persistido.
 
 ## Pendencias Intencionais
 
-- Broadcast on-chain real fica fora da v0.7.0.
+- Broadcast on-chain real fica fora da v0.8.0.
 - Alertas externos/agendados devem pedir confirmacao antes de enviar mensagens.
 - Simulacao on-chain, adaptadores transacionais e rollback ficam para release futura explicita.

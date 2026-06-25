@@ -1,6 +1,6 @@
 ---
 name: auto-pool-openclaw
-description: Analisa, ranqueia, simula, planeja, audita e executa simulacao guardada de pools DeFi, swap e bridge em redes EVM e Solana, com signer privado via ENV, APR ajustado por risco, TVL, liquidez, RSI, ATR, Bollinger width, ADX, lateralizacao, range dinamico, exposicao de carteira, watcher, drawdown, impermanent loss, recibos auditaveis, guardrails e dry-run. Use para encontrar pools, simular LP, preparar add/remove liquidity, collect fees, rebalance, swap, bridge, validar private key em secret manager e revisar riscos antes de qualquer execucao on-chain. Keywords: auto pool, DeFi, LP, EVM, Solana, liquidity pool, private key, signer, swap, bridge, wallet, watcher, audit, APR, TVL, RSI, ATR, ADX, Bollinger, dynamic range, yield, impermanent loss, drawdown, dry-run, planner, guarded execution, guardrails.
+description: Analisa, ranqueia, simula, planeja, audita e roda autonomia simulada de pools DeFi, swap e bridge em redes EVM e Solana, com signer privado via ENV, APR ajustado por risco, TVL, liquidez, RSI, ATR, Bollinger width, ADX, lateralizacao, range dinamico, wallet, watcher, drawdown, impermanent loss, recibos auditaveis, guardrails e dry-run. Use para encontrar pools, simular LP, preparar add/remove liquidity, collect fees, rebalance, swap, bridge, validar private key em secret manager, executar ciclo auto simulado e revisar riscos antes de qualquer execucao on-chain. Keywords: auto pool, DeFi, LP, EVM, Solana, liquidity pool, private key, signer, swap, bridge, wallet, watcher, audit, autonomy, autopilot, APR, TVL, RSI, ATR, ADX, Bollinger, dynamic range, yield, impermanent loss, drawdown, dry-run, planner, guarded execution, guardrails.
 ---
 
 # Auto Pool OpenClaw
@@ -17,6 +17,7 @@ Skill standalone para analise, ranking, simulacao e planejamento operacional de 
 - O usuario quer um plano de add/remove liquidity para EVM ou Solana antes de assinar qualquer transacao.
 - O usuario quer revisar exposicao simulada por carteira publica, chain, protocolo e ativo.
 - O usuario quer watcher/alertas locais ou auditoria de seguranca do repo.
+- O usuario quer um ciclo autonomo simulado com audit, watch, ranking, plano, limites e decisao persistida.
 - O usuario quer preparar swap ou bridge com quote/plano seguro antes de assinar qualquer transacao.
 - O usuario quer validar automacao com private key guardada em ENV/secret manager, sem expor segredo no chat.
 
@@ -40,6 +41,7 @@ A `auto-pools` implementa motor proprio de:
 - watcher e auditoria local;
 - plano quote-only de swap e bridge;
 - auditoria de signer local/private key EVM via ENV;
+- autonomia simulada com limites de score, posicoes abertas e orcamento diario;
 - dry-run;
 - saida operacional em PT-BR.
 
@@ -55,6 +57,7 @@ A `auto-pools` implementa motor proprio de:
 - `wallet`: revisar endereco publico e exposicao simulada por ativo, chain e protocolo.
 - `watch`: revisar posicoes simuladas abertas e alertar por bloqueios, drawdown, IL ou baixa confianca de range.
 - `audit`: varrer seguranca local, secrets e artefatos runtime ignorados.
+- `auto`: rodar ciclo autonomo simulado com audit, watch, ranking, plano, limites e decisao persistida.
 - `execute`: simulacao guardada de `open`, `close`, `collect` e `rebalance`; nunca faz broadcast nesta versao.
 
 ## Regras de Seguranca
@@ -113,6 +116,7 @@ python3 workspace/auto_pools.py --mode execute --action open --chain base --prof
 python3 workspace/auto_pools.py --mode execute --action open --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --confirm --json
 python3 workspace/auto_pools.py --mode swap --from-chain base --from-token USDC --to-token ETH --amount-usd 500 --profile conservador --json
 python3 workspace/auto_pools.py --mode bridge --from-chain base --to-chain arbitrum --token USDC --amount-usd 250 --profile moderado --json
+python3 workspace/auto_pools.py --mode auto --autonomy-enable --open-if-clear --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --daily-budget-usd 250 --json
 python3 workspace/auto_pools.py --mode wallet --wallet-address 0x0000000000000000000000000000000000000000 --json
 python3 workspace/auto_pools.py --mode watch --json
 python3 workspace/auto_pools.py --mode audit --json
@@ -147,7 +151,9 @@ O modo `wallet` aceita somente endereco publico e calcula exposicao a partir de 
 
 Os modos `swap` e `bridge` sao quote-only/planner: validam chain, token, valor, slippage e adaptador sugerido, mas retornam `dry_run_only=true`, `broadcasted=false` e `tx_hash=null`.
 
-So trate broadcast real como permitido quando uma versao futura implementar simulacao on-chain, adaptador transacional e confirmacao explicita. A v0.7.0 apenas audita readiness de signer/private key e mantem `broadcasted=false`.
+O modo `auto` e o ciclo mais autonomo permitido nesta release. Ele le config do wizard e ENV, executa `audit`, roda `watch`, ranqueia candidatas, aplica `AUTO_POOLS_MIN_SCORE`, `AUTO_POOLS_MAX_OPEN_POSITIONS` e `AUTO_POOLS_DAILY_BUDGET_USD`, gera plano e so cria posicao simulada quando `AUTO_POOLS_AUTONOMY_ENABLE=true` e `AUTO_POOLS_OPEN_IF_CLEAR=true`. Ele registra decisoes em `workspace/state/auto_pools_decisions.json`, separa `blocked_reasons` de `advisory_reasons` e continua com `broadcasted=false`.
+
+So trate broadcast real como permitido quando uma versao futura implementar simulacao on-chain, adaptador transacional e confirmacao explicita. A v0.8.0 apenas audita readiness de signer/private key, roda autonomia simulada e mantem `broadcasted=false`.
 
 ## Plano Completo
 

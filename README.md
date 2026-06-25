@@ -17,6 +17,7 @@
 - Simula alocacao em modo dry-run sem executar transacao real.
 - Gera plano operacional de entrada, saida, collect fees e rebalance para EVM/Solana sem assinar transacao.
 - Simula execucao guardada de `open`, `close`, `collect` e `rebalance`, com recibo auditavel e sem broadcast.
+- Roda ciclo `auto` para autonomia simulada: audit, watch, ranking, plano, limites e decisao persistida.
 - Revisa carteira publica e exposicao simulada por ativo, chain e protocolo.
 - Roda watcher local de posicoes simuladas abertas com alertas de guardrail/range/risco.
 - Roda auditoria local de secrets e artefatos runtime antes de release.
@@ -41,6 +42,16 @@
 | AUTO_POOLS_PRIVATE_KEY | Opcional para auditoria local de signer EVM; nunca usar em chat ou Git |
 | AUTO_POOLS_EVM_PRIVATE_KEY / EVM_PRIVATE_KEY | Aliases legados opcionais |
 | AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER | Opcional; `true` permite preparar signer local em ambiente controlado |
+| AUTO_POOLS_AUTONOMY_ENABLE | Opcional; `true` habilita ciclo autonomo simulado |
+| AUTO_POOLS_OPEN_IF_CLEAR | Opcional; `true` permite abrir posicao simulada se todos os guardrails passarem |
+| AUTO_POOLS_CAPITAL_USD | Opcional; capital de referencia para autonomia |
+| AUTO_POOLS_ALLOCATION_PCT | Opcional; alocacao maxima por pool, limitada a 30% |
+| AUTO_POOLS_LIMIT | Opcional; quantidade de pools avaliadas no ciclo auto |
+| AUTO_POOLS_CHAIN | Opcional; chain do ciclo auto ou `all` |
+| AUTO_POOLS_MARKET_DATA | Opcional; `true` usa candles publicos no ciclo auto |
+| AUTO_POOLS_MIN_SCORE | Opcional; score minimo para autonomia |
+| AUTO_POOLS_MAX_OPEN_POSITIONS | Opcional; limite de posicoes simuladas abertas |
+| AUTO_POOLS_DAILY_BUDGET_USD | Opcional; orcamento diario simulado |
 
 ## Exemplos de Uso
 
@@ -69,6 +80,7 @@ python3 workspace/auto_pools.py --mode execute --action open --chain base --prof
 python3 workspace/auto_pools.py --mode execute --action open --chain solana --profile moderado --capital 1000 --allocation-pct 0.05 --confirm --json
 python3 workspace/auto_pools.py --mode swap --from-chain base --from-token USDC --to-token ETH --amount-usd 500 --profile conservador --json
 python3 workspace/auto_pools.py --mode bridge --from-chain base --to-chain arbitrum --token USDC --amount-usd 250 --profile moderado --json
+python3 workspace/auto_pools.py --mode auto --autonomy-enable --open-if-clear --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --daily-budget-usd 250 --json
 python3 workspace/auto_pools.py --mode wallet --wallet-address 0x0000000000000000000000000000000000000000 --json
 python3 workspace/auto_pools.py --mode watch --json
 python3 workspace/auto_pools.py --mode audit --json
@@ -102,6 +114,26 @@ O modo `plan` gera um `PoolExecutionPlan` com:
 - `guardrails`: slippage, gas, deadline, drawdown, IL, confirmacao obrigatoria e bloqueios.
 
 O campo `guardrails.execution_enabled` fica `false` nesta versao mesmo que `AUTO_POOLS_EXECUTION_ENABLE` exista. Isso e intencional: o repo entrega automacao planejada e testavel, nao assinatura on-chain.
+
+## Autonomia simulada
+
+O modo `auto` executa um ciclo operacional completo e auditavel:
+
+- carrega configuracao do wizard e overrides por ENV/CLI;
+- roda `audit` antes de qualquer decisao;
+- roda `watch` nas posicoes simuladas abertas;
+- busca e ranqueia pools com guardrails;
+- aplica `AUTO_POOLS_MIN_SCORE`, `AUTO_POOLS_MAX_OPEN_POSITIONS` e `AUTO_POOLS_DAILY_BUDGET_USD`;
+- gera plano e, se `AUTO_POOLS_AUTONOMY_ENABLE=true` e `AUTO_POOLS_OPEN_IF_CLEAR=true`, abre somente posicao simulada;
+- persiste a decisao em `workspace/state/auto_pools_decisions.json`, ignorado pelo Git.
+
+Exemplo seguro:
+
+```bash
+AUTO_POOLS_USE_SAMPLE=1 python3 workspace/auto_pools.py --mode auto --autonomy-enable --open-if-clear --chain base --profile conservador --capital 1000 --allocation-pct 0.08 --daily-budget-usd 250 --min-score 60 --json
+```
+
+Mesmo no ciclo autonomo, a skill retorna `broadcasted=false`, `tx_hash=null` e separa `blocked_reasons` de `advisory_reasons`. Motivos como `execution-disabled` e `missing-signer` sao avisos para broadcast futuro, mas nao impedem simulacao local quando os guardrails de risco estao limpos.
 
 ## Market data e indicadores
 
@@ -212,7 +244,7 @@ auto_pool_openclaw/
 
 - Nunca coloque seed phrase, chave privada, token ou cookie no Git.
 - O MVP e dry-run por padrao.
-- Broadcast real de transacao esta fora da versao `0.7.0`.
+- Broadcast real de transacao esta fora da versao `0.8.0`.
 - Qualquer execucao futura deve usar ENV/secret manager, simulacao previa e confirmacao explicita.
 
 ## Licenca

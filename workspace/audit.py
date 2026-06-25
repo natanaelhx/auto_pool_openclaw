@@ -42,7 +42,12 @@ def run_audit(root: str) -> Dict:
     findings = scan_for_secrets(root)
     signer = signer_status()
     runtime_artifacts = []
-    for rel in ["workspace/state/auto_pools_positions.json", "workspace/state/auto_pools_config.json", ".env"]:
+    for rel in [
+        "workspace/state/auto_pools_positions.json",
+        "workspace/state/auto_pools_config.json",
+        "workspace/state/auto_pools_decisions.json",
+        ".env",
+    ]:
         if os.path.exists(os.path.join(root, rel)):
             runtime_artifacts.append(rel)
 

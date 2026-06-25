@@ -1,7 +1,7 @@
 {
   "name": "auto-pool-openclaw",
-  "version": "0.7.0",
-  "description": "Skill OpenClaw para analisar pools DeFi EVM/Solana com signer privado via env, pools, swap, bridge, range, carteira, watcher e auditoria.",
+  "version": "0.8.0",
+  "description": "Skill OpenClaw para analisar pools DeFi EVM/Solana com autonomia simulada, signer via env, pools, swap, bridge, wallet, watcher e auditoria.",
   "author": "NatanaelH",
   "license": "Proprietary",
   "homepage": "https://github.com/natanaelhx/auto_pool_openclaw",
@@ -32,7 +32,17 @@
       "AUTO_POOLS_PRIVATE_KEY",
       "AUTO_POOLS_EVM_PRIVATE_KEY",
       "EVM_PRIVATE_KEY",
-      "AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER"
+      "AUTO_POOLS_ALLOW_PRIVATE_KEY_SIGNER",
+      "AUTO_POOLS_AUTONOMY_ENABLE",
+      "AUTO_POOLS_OPEN_IF_CLEAR",
+      "AUTO_POOLS_CAPITAL_USD",
+      "AUTO_POOLS_ALLOCATION_PCT",
+      "AUTO_POOLS_LIMIT",
+      "AUTO_POOLS_CHAIN",
+      "AUTO_POOLS_MARKET_DATA",
+      "AUTO_POOLS_MIN_SCORE",
+      "AUTO_POOLS_MAX_OPEN_POSITIONS",
+      "AUTO_POOLS_DAILY_BUDGET_USD"
     ]
   },
   "pricing_tier": "free",

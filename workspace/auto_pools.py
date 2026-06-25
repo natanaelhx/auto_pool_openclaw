@@ -11,6 +11,7 @@ sys.path.insert(0, BASE_DIR)
 from adapters.defillama import fetch_pools
 from adapters.market_data import pair_market_metrics
 from audit import run_audit
+from autonomy import run_autonomy_cycle
 from dry_run import simulate
 from engines.scoring import rank_pools
 from executor import execute_guarded
@@ -22,7 +23,7 @@ from watcher import review_positions
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Auto Pool OpenClaw - scan, ranking, dry-run, plano e execucao guardada DeFi.")
-    parser.add_argument("--mode", choices=["scan", "rank", "dry-run", "plan", "execute", "swap", "bridge", "wallet", "watch", "audit", "wizard"], default="rank")
+    parser.add_argument("--mode", choices=["scan", "rank", "dry-run", "plan", "execute", "swap", "bridge", "wallet", "watch", "audit", "wizard", "auto"], default="rank")
     parser.add_argument("--action", choices=["open", "close", "collect", "rebalance"], default="open", help="Acao usada no modo execute.")
     parser.add_argument("--position-id", default="", help="ID de posicao simulada para close, collect ou rebalance.")
     parser.add_argument("--confirm", action="store_true", help="Confirmacao explicita para execucao guardada. Nao faz broadcast nesta release.")
@@ -40,6 +41,11 @@ def parse_args():
     parser.add_argument("--token", default="", help="Token para bridge.")
     parser.add_argument("--amount-usd", type=float, default=0.0, help="Valor nocional em USD para swap/bridge.")
     parser.add_argument("--slippage-bps", type=int, default=0, help="Slippage maximo solicitado em bps; limitado pelo perfil.")
+    parser.add_argument("--autonomy-enable", action="store_true", help="Habilita um ciclo autonomo auditavel nesta chamada.")
+    parser.add_argument("--open-if-clear", action="store_true", help="Permite abrir posicao simulada se todos os guardrails passarem.")
+    parser.add_argument("--min-score", type=float, default=None, help="Score minimo para autonomia.")
+    parser.add_argument("--max-open-positions", type=int, default=None, help="Limite de posicoes simuladas abertas.")
+    parser.add_argument("--daily-budget-usd", type=float, default=None, help="Orcamento diario simulado para autonomia.")
     parser.add_argument("--json", action="store_true", help="Retorna JSON bruto.")
     return parser.parse_args()
 
@@ -132,6 +138,36 @@ def main():
             print(f"Status: {payload['status']}")
             for check in payload["checks"]:
                 print(f"- {check['name']}: {check['status']}")
+        return
+
+    if args.mode == "auto":
+        payload = run_autonomy_cycle(
+            {
+                "enabled": args.autonomy_enable or None,
+                "open_if_clear": args.open_if_clear or None,
+                "profile": args.profile,
+                "capital_usd": args.capital,
+                "allocation_pct": args.allocation_pct,
+                "limit": args.limit,
+                "chain": args.chain,
+                "market_data": args.market_data,
+                "min_score": args.min_score,
+                "max_open_positions": args.max_open_positions,
+                "daily_budget_usd": args.daily_budget_usd,
+            }
+        )
+        if args.json:
+            output_json(payload)
+        else:
+            print("Autonomia")
+            print(f"Decisao: {payload['decision']}")
+            print(f"Posicoes abertas: {payload['open_positions']}")
+            if payload["best"]:
+                best_pool = payload["best"]["pool"]
+                print(f"Melhor candidata: {best_pool['chain']} / {best_pool['protocol']} / {best_pool['pool']}")
+                print(f"Score: {payload['best']['score']}/100")
+            print(f"Broadcast: {payload['security']['broadcasted']}")
+            print(f"Bloqueios: {'; '.join(payload['blocked_reasons']) or 'nenhum'}")
         return
 
     if args.mode == "swap":

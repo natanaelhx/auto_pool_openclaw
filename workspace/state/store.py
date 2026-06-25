@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 
 STATE_DIR = os.path.dirname(os.path.abspath(__file__))
 POSITIONS_PATH = os.path.join(STATE_DIR, "auto_pools_positions.json")
+DECISIONS_PATH = os.path.join(STATE_DIR, "auto_pools_decisions.json")
 
 
 def _now_iso() -> str:
@@ -53,3 +54,30 @@ def find_position(position_id: str, path: str = POSITIONS_PATH) -> Optional[Dict
         if position.get("position_id") == position_id:
             return position
     return None
+
+
+def load_decisions(path: str = DECISIONS_PATH) -> Dict:
+    if not os.path.exists(path):
+        return {"version": 1, "decisions": []}
+    with open(path, "r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    if "decisions" not in data:
+        data["decisions"] = []
+    return data
+
+
+def save_decisions(data: Dict, path: str = DECISIONS_PATH) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    os.replace(tmp_path, path)
+
+
+def append_decision(decision: Dict, path: str = DECISIONS_PATH) -> Dict:
+    data = load_decisions(path)
+    decision["created_at"] = _now_iso()
+    data["decisions"].append(decision)
+    save_decisions(data, path)
+    return decision
